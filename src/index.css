@@ -1,26 +1,21 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=Outfit:wght@500;600;700;800&display=swap');
 
 :root {
-  /* Premium Organic Palette */
-  --primary: #1B4332;       /* Deep Forest Green */
-  --primary-rgb: 27, 67, 50;
-  --primary-light: #2D6A4F;
-  --secondary: #F5F5DC;     /* Warm Earthy Beige */
-  --accent: #D4AF37;        /* Soft Antique Gold */
-  --accent-light: #E6C867;
-  --brown: #4A3728;         /* Rich Earth/Wood */
-  --charcoal: #2D3436;
-  --text: #2D3436;
-  --text-light: #636E72;
-  --white: #FFFFFF;
+  /* Dynamic Premium Palette from User Design */
+  --bg-cream: #fcfaf5;
+  --primary-green: #1d4d35;
+  --primary-text: #183126;
+  --accent-gold: #8b6b2f;
+  --accent-gold-light: #c2ab67;
+  --secondary-bg: #f5f0e6;
+  --border-color: #e6dfd1;
+  --shadow-soft: 0 10px 30px rgba(0,0,0,0.05);
   
-  /* Glass & Depth */
-  --glass: rgba(255, 255, 255, 0.85);
-  --glass-dark: rgba(27, 67, 50, 0.15);
-  --shadow: 0 10px 30px -10px rgba(27, 67, 50, 0.1);
-  --shadow-lg: 0 20px 40px -15px rgba(27, 67, 50, 0.15);
-  --border-radius-lg: 32px;
-  --border-radius: 16px;
+  /* Fallback for legacy components */
+  --primary: var(--primary-green);
+  --secondary: var(--bg-cream);
+  --accent: var(--accent-gold);
+  --white: #ffffff;
 }
 
 * {
@@ -30,10 +25,10 @@
 }
 
 body {
-  font-family: 'Inter', sans-serif;
-  background-color: var(--white);
-  color: var(--text);
-  line-height: 1.7;
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-cream);
+  color: var(--primary-text);
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
 

@@ -1,6 +1,15 @@
 import React from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
-import { Star, Truck, ShieldCheck, MapPin, ArrowRight, MessageCircle } from 'lucide-react';
+import { 
+  BarChart3, 
+  Truck, 
+  Calendar, 
+  Users, 
+  ArrowRight, 
+  CheckCircle2,
+  MessageCircle,
+  HelpCircle
+} from 'lucide-react';
 
 const Services = () => {
   const { farm } = useOutletContext();
@@ -8,118 +17,121 @@ const Services = () => {
 
   const services = [
     {
-      title: "Bulk Supply",
-      icon: <Star size={32} />,
-      desc: "For resellers, butcheries, and events — consistent quality poultry in large quantities.",
-      btnText: "Request Bulk Quote"
+      title: 'Bulk Supply & Wholesale',
+      desc: 'Consistent poultry supply for butcheries, retailers, and local businesses in Polokwane. We offer tiered pricing for bulk buyers.',
+      icon: <BarChart3 className="w-8 h-8" />,
+      features: ['Reliable volume', 'Competitive pricing', 'Priority scheduling']
     },
     {
-      title: "Reliable Delivery",
-      icon: <Truck size={32} />,
-      desc: "Fast and safe delivery across Polokwane. Fresh products straight to your location.",
-      btnText: "Check delivery areas"
+      title: 'Local Delivery Service',
+      desc: 'Direct farm-to-door delivery across Polokwane and surrounding areas. Our specialized transport ensures your order stays fresh.',
+      icon: <Truck className="w-8 h-8" />,
+      features: ['Home delivery', 'Scheduled routes', 'Careful handling']
     },
     {
-      title: "Advance Booking",
-      icon: <ShieldCheck size={32} />,
-      desc: "Reserve your chickens or chicks in advance to avoid shortages and ensure stock for your needs.",
-      btnText: "Book in advance"
+      title: 'Advance Stock Booking',
+      desc: 'Reserve your chickens or day-old chicks months in advance to ensure supply for your farm or event during peak seasons.',
+      icon: <Calendar className="w-8 h-8" />,
+      features: ['Guaranteed availability', 'Small deposit required', 'Flexible pickup']
     },
     {
-      title: "Event Supply",
-      icon: <MapPin size={32} />,
-      desc: "Reliable poultry supply for weddings, funerals, and community events in the heart of Polokwane.",
-      btnText: "Inquire for event"
+      title: 'Community Event Supply',
+      desc: 'Bulk supply for weddings, funerals, and community gatherings. We understand the local needs and provide timely delivery.',
+      icon: <Users className="w-8 h-8" />,
+      features: ['On-site delivery', 'Custom packaging', 'Bulk broiler specials']
     }
   ];
 
+  const openWhatsApp = (service) => {
+    const msg = `Hi New Dawn, I'm interested in your ${service} service.`;
+    window.open(`https://wa.me/${contact.whatsapp?.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
   return (
-    <div className="pt-24 pb-20">
-      <section className="bg-primary pt-32 pb-24 text-white text-center">
-        <div className="container">
-          <span className="uppercase tracking-[0.3em] font-bold text-accent mb-6 inline-block">Professional Support</span>
-          <h1 className="text-5xl md:text-7xl font-display font-bold mb-8">Farm <span className="text-secondary italic">Services</span></h1>
-          <p className="text-secondary opacity-80 max-w-3xl mx-auto text-xl leading-relaxed">
-            We support local businesses, resellers, and community families with dedicated supply services designed for reliability and freshness.
+    <div className="pt-24 bg-[#fcfaf5] min-h-screen">
+      {/* Hero Header */}
+      <section className="bg-[#1d4d35] pt-32 pb-24 text-white relative overflow-hidden">
+        <div className="container mx-auto px-[5%] max-w-[1200px] relative z-10">
+          <span className="uppercase tracking-[0.3em] font-black text-[#d6c27c] mb-6 inline-block text-sm italic">Our Farm Support</span>
+          <h1 className="text-5xl md:text-7xl font-black mb-8 leading-tight tracking-tight">Farm <span className="text-[#fcfaf5] italic">Services</span></h1>
+          <p className="text-[#d3ddd7] max-w-2xl text-xl leading-relaxed font-medium">
+             We do more than sell poultry. We help customers, resellers, and
+             communities get the supply they need in a simple, reliable way.
           </p>
         </div>
+        <div className="absolute inset-0 bg-organic opacity-5 pointer-events-none"></div>
       </section>
 
-      <section className="section bg-white">
-        <div className="container">
-          <div className="grid md:grid-cols-2 gap-10">
-            {services.map((service, i) => (
-              <div key={i} className="p-12 bg-secondary bg-organic border border-primary/5 rounded-[40px] group hover:border-accent transition-all">
-                <div className="w-20 h-20 rounded-3xl bg-primary text-secondary flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+      <div className="container mx-auto px-[5%] max-w-[1200px] py-24">
+        <div className="grid md:grid-cols-2 gap-10 mb-32">
+          {services.map((service, index) => (
+            <div key={index} className="bg-white p-10 md:p-14 rounded-[40px] shadow-sm border border-[#e6dfd1] hover:shadow-2xl hover:border-[#1d4d35] transition-all group relative overflow-hidden">
+              <div className="relative z-10">
+                <div className="w-16 h-16 rounded-2xl bg-[#fcfaf5] border border-[#e6dfd1] text-[#1d4d35] flex items-center justify-center mb-8 shadow-sm group-hover:scale-110 group-hover:bg-[#1d4d35] group-hover:text-white transition-all">
                   {service.icon}
                 </div>
-                <h3 className="text-3xl font-display font-bold mb-4 text-primary">{service.title}</h3>
-                <p className="text-xl text-gray-500 mb-10 leading-relaxed font-medium">
+                <h3 className="text-3xl font-black text-[#183126] mb-6 tracking-tight uppercase">{service.title}</h3>
+                <p className="text-[#5f6c65] text-lg leading-relaxed mb-10 font-medium">
                   {service.desc}
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Link 
-                    to={`/${farm.slug}/order?service=${service.title}`}
-                    className="btn btn-primary text-sm px-8"
-                  >
-                    {service.btnText}
-                  </Link>
-                  <a 
-                    href={`https://wa.me/${contact.whatsapp?.replace(/[^0-9]/g, '')}?text=Hi, I'm interested in your ${service.title} service.`}
-                    className="btn btn-whatsapp text-sm px-8"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Enquire on WhatsApp
-                  </a>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+                  {service.features.map((feature, i) => (
+                    <div key={i} className="flex items-center gap-3 text-[#183126] font-black text-sm uppercase tracking-wide">
+                      <CheckCircle2 size={18} className="text-[#d6c27c] flex-shrink-0" />
+                      {feature}
+                    </div>
+                  ))}
                 </div>
+                <button 
+                  onClick={() => openWhatsApp(service.title)}
+                  className="w-full sm:w-auto px-10 py-5 bg-[#1d4d35] text-white font-black rounded-full shadow-lg hover:bg-[#153a28] flex items-center justify-center gap-2 transition-all"
+                >
+                  Enquire Now <ArrowRight size={18} />
+                </button>
               </div>
-            ))}
-          </div>
+              {/* Accents */}
+              <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-[#1d4d35] opacity-[0.02] rounded-full pointer-events-none group-hover:opacity-5 transition-all"></div>
+            </div>
+          ))}
         </div>
-      </section>
 
-      {/* Trust Quote */}
-      <section className="section bg-primary text-secondary overflow-hidden relative">
-        <div className="container relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl md:text-5xl font-display italic font-bold mb-10 leading-tight">
-              "Consistency and quality are our top priorities. You can rely on our farm to support your business or event requirements."
-            </h2>
-            <div className="flex items-center justify-center gap-4">
-              <span className="w-12 h-px bg-accent"></span>
-              <p className="uppercase tracking-widest font-bold">The New Dawn Quality Promise</p>
-              <span className="w-12 h-px bg-accent"></span>
-            </div>
-          </div>
+        {/* Support Section */}
+        <div className="bg-[#183126] p-12 md:p-24 rounded-[60px] text-white shadow-2xl relative overflow-hidden">
+           <div className="grid lg:grid-cols-2 gap-16 relative z-10">
+             <div>
+                <span className="uppercase tracking-[0.3em] font-black text-[#d6c27c] mb-6 inline-block text-sm italic">Still have questions?</span>
+                <h2 className="text-4xl md:text-6xl font-black mb-8 leading-tight tracking-tight">Practical assistance for Polokwane locals</h2>
+                <div className="space-y-6">
+                   <div className="flex gap-4">
+                      <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-[#d6c27c] shadow-lg flex-shrink-0">
+                         <HelpCircle size={22} />
+                      </div>
+                      <p className="text-lg text-[#d3ddd7] leading-relaxed">
+                         Don't see the service you need? Contact us directly. We are always open to supporting local farmers and community projects.
+                      </p>
+                   </div>
+                </div>
+             </div>
+             <div className="flex flex-col justify-center gap-6">
+                <a 
+                   href={`https://wa.me/${contact.whatsapp?.replace(/[^0-9]/g, '')}?text=Hi, I have a special service enquiry.`}
+                   className="px-12 py-5 bg-[#28c76f] text-white font-black text-xl rounded-full shadow-lg hover:bg-[#21a55c] transition-all flex items-center justify-center gap-3 text-center"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                >
+                   <MessageCircle size={24} /> Message us on WhatsApp
+                </a>
+                <Link 
+                   to={`/${farm.slug}/contact`}
+                   className="px-12 py-5 bg-white text-[#183126] font-black text-xl rounded-full shadow-xl hover:bg-gray-50 transition-all text-center"
+                >
+                   Contact Farm Team
+                </Link>
+             </div>
+           </div>
+           <div className="absolute inset-0 bg-organic opacity-5 pointer-events-none"></div>
         </div>
-        {/* Abstract Background */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-screen h-screen bg-secondary opacity-[0.03] rounded-full blur-3xl"></div>
-      </section>
-
-      {/* Practical Info Grid */}
-      <section className="section bg-white">
-        <div className="container">
-          <div className="grid lg:grid-cols-3 gap-16">
-            <div>
-              <h3 className="text-2xl font-display font-bold text-primary mb-4">Location & Access</h3>
-              <p className="text-gray-500 mb-6">Based in Polokwane, we offer both farm pickup and delivery options for all our services.</p>
-              <Link to={`/${farm.slug}/contact`} className="text-primary font-bold flex items-center gap-2 group">
-                Find our farm <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
-              </Link>
-            </div>
-            <div>
-              <h3 className="text-2xl font-display font-bold text-primary mb-4">Service Reliability</h3>
-              <p className="text-gray-500 mb-6">We maintain strict health and hygiene standards across all our supply chains and distribution services.</p>
-            </div>
-            <div>
-              <h3 className="text-2xl font-display font-bold text-primary mb-4">Direct Contact</h3>
-              <p className="text-gray-500 mb-6">Speak directly to our farm manager for large bulk orders or special event scheduling.</p>
-              <p className="font-bold text-primary">{contact.phone || '+27 12 345 6789'}</p>
-            </div>
-          </div>
-        </div>
-      </section>
+      </div>
     </div>
   );
 };

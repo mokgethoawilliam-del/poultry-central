@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
 import { 
   BarChart3, 
@@ -17,14 +18,20 @@ import {
   Layout,
   Image as ImageIcon,
   CheckCircle2,
-  Save
+  Save,
+  MessageSquare,
+  Trash2,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 const Dashboard = () => {
+  const { farm } = useOutletContext();
   const [activeTab, setActiveTab] = useState('Overview');
-  const [farmData, setFarmData] = useState(null);
+  const [farmData, setFarmData] = useState(farm || null);
   const [orders, setOrders] = useState([]);
   const [inventory, setInventory] = useState([]);
+  const [testimonials, setTestimonials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState('');
 
@@ -33,9 +40,21 @@ const Dashboard = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // In a real app, we'd fetch the specific farm for the logged in user
-        const { data: farm } = await supabase.from('farms').select('*').single();
-        setFarmData(farm);
+        if (!farmData) {
+          const { data: f } = await supabase.from('farms').select('*').single();
+          setFarmData(f);
+        }
+
+        // Fetch testimonials
+        const currentFarmId = farm?.id || farmData?.id;
+        if (!currentFarmId) return;
+
+        const { data: testData } = await supabase
+          .from('testimonials')
+          .select('*')
+          .eq('farm_id', currentFarmId)
+          .order('created_at', { ascending: false });
+        setTestimonials(testData || []);
 
         // Simulated orders and inventory
         setOrders([
@@ -58,10 +77,17 @@ const Dashboard = () => {
   }, []);
 
   const handleUpdateFarm = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     setSaveStatus('Saving...');
     try {
-      const { error } = await supabase.from('farms').update(farmData).eq('id', farmData.id);
+      const { error } = await supabase.from('farms').update({
+        name: farmData.name,
+        about_story: farmData.about_story,
+        branding: farmData.branding,
+        contact_info: farmData.contact_info,
+        location: farmData.location,
+        why_content: farmData.why_content
+      }).eq('id', farmData.id);
       if (error) throw error;
       setSaveStatus('Saved Successfully');
       setTimeout(() => setSaveStatus(''), 3000);
@@ -71,51 +97,75 @@ const Dashboard = () => {
     }
   };
 
+  const toggleTestimonial = async (id, currentStatus) => {
+    try {
+      const { error } = await supabase
+        .from('testimonials')
+        .update({ is_active: !currentStatus })
+        .eq('id', id);
+      if (error) throw error;
+      setTestimonials(testimonials.map(t => t.id === id ? {...t, is_active: !currentStatus} : t));
+    } catch (err) {
+      console.error("Testimonial toggle error:", err);
+    }
+  };
+
+  const deleteTestimonial = async (id) => {
+    if (!window.confirm("Delete this testimonial?")) return;
+    try {
+      const { error } = await supabase.from('testimonials').delete().eq('id', id);
+      if (error) throw error;
+      setTestimonials(testimonials.filter(t => t.id !== id));
+    } catch (err) {
+      console.error("Testimonial delete error:", err);
+    }
+  };
+
   const SidebarItem = ({ icon: Icon, label, active, onClick }) => (
     <button 
       onClick={onClick}
       className={`w-full flex items-center gap-3 px-6 py-4 transition-all ${
         active 
-          ? 'bg-primary text-secondary border-r-4 border-accent' 
+          ? 'bg-[#1d4d35] text-white border-r-4 border-[#8b6b2f]' 
           : 'text-gray-500 hover:bg-gray-50'
       }`}
     >
       <Icon size={20} />
-      <span className="font-semibold">{label}</span>
+      <span className="font-bold">{label}</span>
     </button>
   );
 
   const StatCard = ({ label, value, trend, trendUp, icon: Icon }) => (
-    <div className="bg-white p-6 rounded-3xl shadow-sm border">
+    <div className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100">
       <div className="flex justify-between items-start mb-4">
-        <div className="p-3 bg-secondary bg-opacity-30 rounded-2xl text-primary">
+        <div className="p-3 bg-[#fcfaf5] rounded-2xl text-[#1d4d35] border border-[#e6dfd1]">
           <Icon size={24} />
         </div>
-        <div className={`flex items-center gap-1 text-sm font-bold ${trendUp ? 'text-green-500' : 'text-red-500'}`}>
+        <div className={`flex items-center gap-1 text-sm font-bold ${trendUp ? 'text-green-600' : 'text-red-500'}`}>
           {trendUp ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
           {trend}
         </div>
       </div>
-      <p className="text-gray-500 text-sm font-semibold">{label}</p>
-      <h3 className="text-2xl font-bold text-primary mt-1">{value}</h3>
+      <p className="text-gray-500 text-sm font-bold uppercase tracking-wider">{label}</p>
+      <h3 className="text-3xl font-black text-[#183126] mt-1">{value}</h3>
     </div>
   );
 
   if (loading) return (
-    <div className="h-screen w-full flex items-center justify-center bg-gray-50">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+    <div className="h-screen w-full flex items-center justify-center bg-[#fcfaf5]">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#1d4d35]"></div>
     </div>
   );
 
   return (
-    <div className="flex h-screen bg-gray-50 font-sans">
+    <div className="flex h-screen bg-[#fcfaf5] font-sans">
       {/* Sidebar */}
-      <aside className="w-72 bg-white border-r flex flex-col pt-8">
+      <aside className="w-72 bg-white border-r border-[#e6dfd1] flex flex-col pt-8">
         <div className="px-6 mb-10 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-lg">N</div>
+          <div className="w-10 h-10 rounded-xl bg-[#1d4d35] flex items-center justify-center text-white font-black text-lg shadow-lg">N</div>
           <div className="flex flex-col">
-            <span className="text-sm font-bold text-primary leading-none">New Dawn</span>
-            <span className="text-[10px] uppercase tracking-widest text-accent font-bold">Admin Portal</span>
+            <span className="text-sm font-black text-[#183126] leading-none uppercase tracking-tight">New Dawn</span>
+            <span className="text-[10px] uppercase tracking-widest text-[#8b6b2f] font-bold">Farmer Portal</span>
           </div>
         </div>
         
@@ -124,13 +174,14 @@ const Dashboard = () => {
           <SidebarItem icon={ShoppingBag} label="Orders" active={activeTab === 'Orders'} onClick={() => setActiveTab('Orders')} />
           <SidebarItem icon={Package} label="Inventory" active={activeTab === 'Inventory'} onClick={() => setActiveTab('Inventory')} />
           <SidebarItem icon={Layout} label="Site Editor" active={activeTab === 'Site Editor'} onClick={() => setActiveTab('Site Editor')} />
+          <SidebarItem icon={MessageSquare} label="Testimonials" active={activeTab === 'Testimonials'} onClick={() => setActiveTab('Testimonials')} />
           <SidebarItem icon={Settings} label="Settings" active={activeTab === 'Settings'} onClick={() => setActiveTab('Settings')} />
         </nav>
 
-        <div className="p-6 border-t">
-          <div className="bg-primary bg-opacity-5 p-4 rounded-2xl">
-            <p className="text-xs font-bold text-primary uppercase tracking-tighter mb-1">Subscription</p>
-            <p className="text-sm font-semibold text-primary">Farmer Pro Plan</p>
+        <div className="p-6 border-t border-[#e6dfd1]">
+          <div className="bg-[#1d4d35] bg-opacity-5 p-4 rounded-2xl border border-[#e6dfd1]">
+            <p className="text-xs font-bold text-[#1d4d35] uppercase tracking-widest mb-1">Subscription</p>
+            <p className="text-sm font-black text-[#1d4d35]">Farmer Pro Plan</p>
           </div>
         </div>
       </aside>
@@ -138,19 +189,24 @@ const Dashboard = () => {
       {/* Main Content */}
       <main className="flex-grow flex flex-col overflow-hidden">
         {/* Top Header */}
-        <header className="h-20 bg-white border-b px-10 flex items-center justify-between">
-          <h2 className="text-2xl font-display font-bold text-primary">{activeTab}</h2>
+        <header className="h-20 bg-white border-b border-[#e6dfd1] px-10 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h2 className="text-2xl font-black text-[#183126] uppercase tracking-tight">{activeTab}</h2>
+            {saveStatus && <span className="px-4 py-1.5 bg-[#1d4d35] text-white rounded-full text-xs font-bold animate-pulse">{saveStatus}</span>}
+          </div>
           <div className="flex items-center gap-6">
-            <button className="relative p-2 text-gray-400 hover:text-primary">
+            <button className="relative p-2 text-gray-400 hover:text-[#1d4d35] transition-colors">
               <Bell size={24} />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
             </button>
-            <div className="flex items-center gap-3 border-l pl-6">
+            <div className="flex items-center gap-3 border-l border-[#e6dfd1] pl-6">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold text-primary">Farm Manager</p>
-                <p className="text-xs text-gray-500">{farmData?.name}</p>
+                <p className="text-sm font-black text-[#183126]">{farmData?.name}</p>
+                <p className="text-[10px] text-[#8b6b2f] font-bold uppercase tracking-widest">Administrator</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-primary font-bold">ND</div>
+              <div className="w-11 h-11 rounded-xl bg-[#f5f0e6] border border-[#e6dfd1] flex items-center justify-center text-[#1d4d35] font-black shadow-sm">
+                ND
+              </div>
             </div>
           </div>
         </header>
@@ -164,29 +220,29 @@ const Dashboard = () => {
                 <StatCard label="Today's Sales" value="R4,250" trend="+12.5%" trendUp={true} icon={CreditCard} />
                 <StatCard label="Pending Orders" value="12" trend="+3" trendUp={false} icon={ShoppingBag} />
                 <StatCard label="Total Stock" value="1,240" trend="-50" trendUp={false} icon={Package} />
-                <StatCard label="Live Batches" value="4" trend="Healthy" trendUp={true} icon={CheckCircle2} />
+                <StatCard label="Customer Rating" value="4.8/5" trend="Excellent" trendUp={true} icon={MessageSquare} />
               </div>
 
               <div className="grid lg:grid-cols-2 gap-10">
                 {/* Recent Orders */}
-                <div className="bg-white p-8 rounded-[32px] shadow-sm border">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-bold text-primary">Recent Orders</h3>
-                    <button className="text-sm font-bold text-primary hover:underline">View All</button>
+                <div className="bg-white p-8 rounded-[40px] shadow-sm border border-[#e6dfd1]">
+                  <div className="flex justify-between items-center mb-10">
+                    <h3 className="text-2xl font-black text-[#183126]">Recent Orders</h3>
+                    <button className="text-sm font-bold text-[#1d4d35] uppercase tracking-widest hover:underline">View All &rarr;</button>
                   </div>
                   <div className="space-y-4">
                     {orders.map(order => (
-                      <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors cursor-pointer">
-                        <div className="flex items-center gap-4">
-                          <div className={`w-2 h-10 rounded-full ${order.status === 'New' ? 'bg-accent' : 'bg-green-500'}`}></div>
+                      <div key={order.id} className="flex items-center justify-between p-5 bg-[#fcfaf5] rounded-[24px] border border-transparent hover:border-[#e6dfd1] transition-all cursor-pointer group">
+                        <div className="flex items-center gap-5">
+                          <div className={`w-3 h-12 rounded-full ${order.status === 'New' ? 'bg-[#8b6b2f]' : 'bg-[#1d4d35]'}`}></div>
                           <div>
-                            <p className="font-bold text-primary">{order.customer}</p>
-                            <p className="text-xs text-gray-500">{order.number}</p>
+                            <p className="font-black text-[#183126] group-hover:text-[#1d4d35] transition-colors">{order.customer}</p>
+                            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-1">{order.number}</p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-primary">R{order.total}</p>
-                          <p className="text-xs text-gray-400 flex items-center gap-1 justify-end">
+                          <p className="font-black text-[#1d4d35] text-lg">R{order.total}</p>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1 flex items-center gap-1 justify-end">
                             <Clock size={12} /> {order.time}
                           </p>
                         </div>
@@ -195,141 +251,173 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                {/* Low Stock Alerts */}
-                <div className="bg-white p-8 rounded-[32px] shadow-sm border">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-bold text-primary">Stock Alert</h3>
-                    <button className="p-2 rounded-xl bg-primary text-secondary hover:bg-primary-light transition-colors">
-                      <Plus size={20} />
-                    </button>
-                  </div>
-                  <div className="space-y-4">
-                    {inventory.filter(i => i.status === 'Low Stock').map(item => (
-                      <div key={item.id} className="p-6 border-2 border-red-100 bg-red-50 rounded-2xl flex items-center justify-between">
-                        <div>
-                          <p className="font-bold text-red-700">{item.item}</p>
-                          <p className="text-sm text-red-500">Only {item.stock} {item.unit} remaining</p>
+                {/* Stock Quick View */}
+                <div className="bg-[#183126] p-10 rounded-[40px] shadow-2xl text-white relative overflow-hidden">
+                   <div className="relative z-10">
+                    <h3 className="text-2xl font-black mb-8">Stock Overview</h3>
+                    <div className="space-y-6">
+                      {inventory.map(item => (
+                        <div key={item.id} className="p-6 bg-white/5 border border-white/10 rounded-3xl flex items-center justify-between hover:bg-white/10 transition-all">
+                          <div>
+                            <p className="font-black mb-1">{item.item}</p>
+                            <p className="text-xs font-bold text-[#d6c27c] uppercase tracking-widest">{item.stock} {item.unit} available</p>
+                          </div>
+                          <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                            item.status === 'Low Stock' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
+                          }`}>
+                            {item.status}
+                          </span>
                         </div>
-                        <button className="bg-white text-red-600 px-6 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-red-600 hover:text-white transition-all">
-                          Restock
-                        </button>
-                      </div>
-                    ))}
-                    <div className="p-6 bg-gray-50 rounded-2xl flex items-center justify-between border border-dashed border-primary/20">
-                      <p className="text-gray-600 font-semibold italic">Manage all batches in inventory section &rarr;</p>
+                      ))}
                     </div>
                   </div>
+                  <div className="absolute inset-x-0 bottom-0 bg-organic opacity-5 pointer-events-none"></div>
                 </div>
               </div>
             </div>
           )}
 
           {activeTab === 'Site Editor' && (
-            <div className="max-w-4xl mx-auto space-y-10">
-              <div className="bg-white p-10 rounded-[40px] shadow-sm border">
-                <div className="flex justify-between items-center mb-10">
-                  <h3 className="text-2xl font-display font-bold text-primary text-accent">Real Farm Website Design</h3>
-                  {saveStatus && <span className="px-4 py-2 bg-primary text-secondary rounded-full font-bold text-xs animate-pulse">{saveStatus}</span>}
-                </div>
+            <div className="max-w-4xl mx-auto space-y-10 animate-fadeIn">
+              <div className="bg-white p-10 md:p-14 rounded-[40px] shadow-sm border border-[#e6dfd1]">
+                <h3 className="text-3xl font-black text-[#183126] mb-12 uppercase tracking-tight">Main Content & Branding</h3>
 
-                <form onSubmit={handleUpdateFarm} className="space-y-8">
-                  {/* Basic Info */}
-                  <div className="grid md:grid-cols-2 gap-8">
+                <form onSubmit={handleUpdateFarm} className="space-y-10">
+                  <div className="grid md:grid-cols-2 gap-10">
                     <div className="space-y-2">
-                      <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">Farm/Store Name</label>
+                      <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1d4d35]">Logo / Brand Name</label>
                       <input 
-                        className="w-full bg-gray-50 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-accent"
+                        className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-black text-[#183126] focus:ring-2 focus:ring-[#1d4d35] outline-none transition-all"
                         value={farmData?.name || ''} 
                         onChange={(e) => setFarmData({...farmData, name: e.target.value})}
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">Store Slug (URL)</label>
+                       <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1d4d35]">Hero Headline</label>
                       <input 
-                        className="w-full bg-gray-200 border-none px-6 py-4 rounded-2xl outline-none cursor-not-allowed"
-                        value={farmData?.slug || ''} 
-                        readOnly
+                        className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-black text-[#183126] focus:ring-2 focus:ring-[#1d4d35] outline-none transition-all"
+                        value={farmData?.branding?.hero_headline || ''} 
+                        onChange={(e) => setFarmData({...farmData, branding: {...farmData.branding, hero_headline: e.target.value}})}
                       />
                     </div>
                   </div>
 
-                  {/* About Story */}
                   <div className="space-y-2">
-                    <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">Our Farm Story (Emotional Section)</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1d4d35]">Our Farm Story (Homepage)</label>
                     <textarea 
-                      rows="4"
-                      className="w-full bg-gray-50 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-accent resize-none"
-                      value={farmData?.about_text || ''} 
-                      onChange={(e) => setFarmData({...farmData, about_text: e.target.value})}
+                      rows="5"
+                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-3xl font-medium text-[#183126]/80 leading-relaxed focus:ring-2 focus:ring-[#1d4d35] outline-none transition-all resize-none"
+                      value={farmData?.about_story || ''} 
+                      onChange={(e) => setFarmData({...farmData, about_story: e.target.value})}
                     />
                   </div>
 
-                  {/* Contact Details */}
-                  <div className="grid md:grid-cols-2 gap-8">
+                  <div className="grid md:grid-cols-2 gap-10">
                     <div className="space-y-2">
-                      <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">WhatsApp Number</label>
+                       <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1d4d35]">WhatsApp (International Format)</label>
                       <input 
-                        className="w-full bg-gray-50 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-accent"
+                        className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-black text-[#183126] focus:ring-2 focus:ring-[#1d4d35] outline-none transition-all"
                         value={farmData?.contact_info?.whatsapp || ''} 
                         onChange={(e) => setFarmData({...farmData, contact_info: {...farmData.contact_info, whatsapp: e.target.value}})}
+                        placeholder="e.g. 27150040130"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">Business Phone</label>
+                      <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1d4d35]">Physical Address</label>
                       <input 
-                        className="w-full bg-gray-50 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-accent"
-                        value={farmData?.contact_info?.phone || ''} 
-                        onChange={(e) => setFarmData({...farmData, contact_info: {...farmData.contact_info, phone: e.target.value}})}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Address & Hours */}
-                  <div className="grid md:grid-cols-2 gap-8">
-                    <div className="space-y-2">
-                      <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">Physical Address (Polokwane)</label>
-                      <input 
-                        className="w-full bg-gray-50 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-accent"
+                        className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-black text-[#183126] focus:ring-2 focus:ring-[#1d4d35] outline-none transition-all"
                         value={farmData?.contact_info?.address || ''} 
                         onChange={(e) => setFarmData({...farmData, contact_info: {...farmData.contact_info, address: e.target.value}})}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">Operating Hours</label>
-                      <input 
-                        className="w-full bg-gray-50 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-accent"
-                        value={farmData?.contact_info?.operating_hours || ''} 
-                        onChange={(e) => setFarmData({...farmData, contact_info: {...farmData.contact_info, operating_hours: e.target.value}})}
-                      />
-                    </div>
                   </div>
 
-                  <div className="pt-6 border-t">
-                    <button type="submit" className="btn btn-primary px-12 py-5 shadow-2xl flex items-center gap-3">
-                      <Save size={20} /> Update Website Design
+                  <div className="pt-10 border-t border-[#e6dfd1] flex items-center justify-between">
+                    <p className="text-xs text-gray-500 italic max-w-sm">Updating these values will reflect instantly on your public landing page after saving.</p>
+                    <button type="submit" className="px-12 py-5 bg-[#1d4d35] text-white font-black rounded-full shadow-2xl hover:scale-105 transition-all flex items-center gap-3">
+                      <Save size={20} /> Deploy Changes
                     </button>
                   </div>
                 </form>
               </div>
 
-              {/* Visual Assets Placeholder */}
-              <div className="bg-white p-10 rounded-[40px] shadow-sm border flex flex-col items-center justify-center py-20 bg-organic bg-secondary bg-opacity-10">
-                <ImageIcon size={64} className="text-primary opacity-20 mb-6" />
-                <h4 className="text-2xl font-display font-bold text-primary mb-2">Farm Image Gallery</h4>
-                <p className="text-gray-500 mb-8 max-w-sm text-center">Upload real photos of your farm, chickens, and eggs to replace the brand placeholders.</p>
-                <div className="flex gap-4">
-                  <button className="px-8 py-3 bg-white border border-primary/10 rounded-xl font-bold text-sm shadow-sm hover:border-accent">Upload Photos</button>
-                  <button className="px-8 py-3 bg-primary text-secondary rounded-xl font-bold text-sm shadow-sm">View Current Gallery</button>
+              {/* Gallery Section Placeholder */}
+              <div className="bg-[#f5f0e6] p-16 rounded-[40px] border border-[#e6dfd1] flex flex-col items-center justify-center text-center">
+                <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center text-[#1d4d35] shadow-xl mb-8">
+                  <ImageIcon size={32} />
                 </div>
+                <h4 className="text-3xl font-black text-[#183126] mb-4 uppercase tracking-tight">Real Farm Imagery</h4>
+                <p className="text-[#5f6c65] max-w-md mb-10 text-lg leading-relaxed font-medium">
+                  The landing page is currently using professional farm stock photos. Upload your own chickens, eggs, and farm landscape to build 100% local trust.
+                </p>
+                <button className="px-12 py-5 bg-white border border-[#d8d0c1] text-[#183126] font-black rounded-full shadow-lg hover:shadow-xl transition-all">
+                  Manage Media Gallery
+                </button>
               </div>
             </div>
           )}
 
-          {activeTab !== 'Overview' && activeTab !== 'Site Editor' && (
-            <div className="bg-white p-24 rounded-[40px] shadow-sm border text-center text-gray-400">
-              <Package size={80} className="mx-auto mb-6 opacity-20" />
-              <p className="text-2xl font-display font-bold text-primary">Section Coming Soon</p>
-              <p className="text-lg">We're building this part of your farm's management suite.</p>
+          {activeTab === 'Testimonials' && (
+            <div className="max-w-5xl mx-auto space-y-10 animate-fadeIn">
+              <div className="flex justify-between items-center bg-[#1d4d35] p-10 rounded-[40px] text-white shadow-xl">
+                 <div>
+                    <h3 className="text-3xl font-black mb-2 uppercase tracking-tight">Customer Voices</h3>
+                    <p className="text-[#d3ddd7] font-medium">Manage the trust indicators shown on your landing page.</p>
+                 </div>
+                 <button className="px-8 py-4 bg-[#8b6b2f] text-white font-black rounded-full shadow-lg flex items-center gap-2 hover:bg-[#a68038] transition-all">
+                    <Plus size={20} /> Add Review
+                 </button>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-8">
+                 {testimonials.map(test => (
+                    <div key={test.id} className={`bg-white p-10 rounded-[40px] border border-[#e6dfd1] shadow-sm flex flex-col justify-between transition-all ${!test.is_active ? 'opacity-50 grayscale' : ''}`}>
+                       <div>
+                          <p className="text-lg text-[#183126] italic font-medium leading-relaxed mb-10">"{test.quote}"</p>
+                       </div>
+                       <div className="flex items-center justify-between border-t border-gray-50 pt-8">
+                          <div className="flex items-center gap-4">
+                             <div className="w-12 h-12 bg-[#f5f0e6] rounded-2xl flex items-center justify-center text-[#1d4d35] font-black">
+                                {test.author_name.charAt(0)}
+                             </div>
+                             <div>
+                                <h4 className="font-black text-[#183126]">{test.author_name}</h4>
+                                <p className="text-[10px] font-black text-[#8b6b2f] uppercase tracking-widest">{test.author_role}</p>
+                             </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                             <button 
+                                onClick={() => toggleTestimonial(test.id, test.is_active)}
+                                className={`p-3 rounded-xl transition-all ${test.is_active ? 'bg-gray-50 text-gray-400 hover:text-red-500' : 'bg-[#1d4d35] text-white'}`}
+                                title={test.is_active ? 'Hide from Web' : 'Show on Web'}
+                             >
+                                {test.is_active ? <EyeOff size={18} /> : <Eye size={18} />}
+                             </button>
+                             <button 
+                                onClick={() => deleteTestimonial(test.id)}
+                                className="p-3 bg-red-50 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition-all"
+                             >
+                                <Trash2 size={18} />
+                             </button>
+                          </div>
+                       </div>
+                    </div>
+                 ))}
+              </div>
+
+              {testimonials.length === 0 && (
+                 <div className="bg-white p-20 rounded-[40px] border border-dashed border-[#e6dfd1] text-center">
+                    <p className="text-gray-400 font-bold italic">No testimonials added yet. Click "Add Review" to get started.</p>
+                 </div>
+              )}
+            </div>
+          )}
+
+          {activeTab !== 'Overview' && activeTab !== 'Site Editor' && activeTab !== 'Testimonials' && (
+            <div className="bg-white p-24 rounded-[40px] shadow-sm border border-[#e6dfd1] text-center text-gray-300">
+              <Package size={80} className="mx-auto mb-6 opacity-10" />
+              <p className="text-2xl font-black text-[#183126] opacity-30 uppercase tracking-widest">Section Under Development</p>
+              <p className="text-lg font-medium">We're finalizing the {activeTab} tools for your poultry business.</p>
             </div>
           )}
         </div>

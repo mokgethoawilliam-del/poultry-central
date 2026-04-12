@@ -32,3 +32,15 @@ export const getFarmProducts = async (farmId) => {
   if (error) throw error
   return data
 }
+
+// Helper to get testimonials for a farm
+export const getFarmTestimonials = async (farmId) => {
+  const { data, error } = await supabase
+    .from('testimonials')
+    .select('*')
+    .eq('farm_id', farmId)
+    .eq('is_active', true)
+  
+  if (error) throw error
+  return data
+}

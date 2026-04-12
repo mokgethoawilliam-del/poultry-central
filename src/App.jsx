@@ -32,10 +32,10 @@ function App() {
           <Route path="contact" element={<Contact />} />
           <Route path="about" element={<Placeholder title="About Our Farm" />} />
           <Route path="gallery" element={<Placeholder title="Gallery" />} />
+          
+          {/* Farmer Dashboard Route (Back Office) */}
+          <Route path="admin" element={<Dashboard />} />
         </Route>
-
-        {/* Farmer Dashboard Route (Back Office) */}
-        <Route path="/admin" element={<Dashboard />} />
       </Routes>
     </BrowserRouter>
   );

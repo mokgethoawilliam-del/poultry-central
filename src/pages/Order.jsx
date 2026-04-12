@@ -1,40 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext, useSearchParams, useNavigate } from 'react-router-dom';
-import { supabase, getFarmProducts } from '../services/supabase';
-import { Calendar, User, Phone, MapPin, CreditCard, ChevronRight, Check, ShieldCheck, Truck, MessageCircle } from 'lucide-react';
+import { supabase } from '../services/supabase';
+import { 
+  ShoppingBag, 
+  Truck, 
+  MapPin, 
+  CreditCard, 
+  MessageCircle, 
+  CheckCircle2, 
+  ArrowRight,
+  Info
+} from 'lucide-react';
 
 const Order = () => {
   const { farm } = useOutletContext();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const productId = searchParams.get('product');
+  
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
-
+  
   const [formData, setFormData] = useState({
-    customerName: '',
-    customerPhone: '',
-    productId: searchParams.get('product') || '',
+    customer_name: '',
+    customer_phone: '',
+    product_id: productId || '',
     quantity: 1,
-    fulfillmentMethod: 'pickup',
-    deliveryAddress: '',
-    preferredDate: '',
-    paymentMethod: 'cash',
+    fulfillment_method: 'pickup',
+    delivery_address: '',
+    payment_method: 'Cash/EFT',
     notes: ''
   });
 
   useEffect(() => {
     const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        const data = await getFarmProducts(farm.id);
-        setProducts(data);
-      } catch (err) {
-        console.error("Error fetching products:", err);
-      } finally {
-        setLoading(false);
-      }
+      const { data } = await supabase
+        .from('products')
+        .select('*')
+        .eq('farm_id', farm.id)
+        .eq('is_active', true);
+      setProducts(data || []);
+      setLoading(false);
     };
     fetchProducts();
   }, [farm.id]);
@@ -44,245 +52,247 @@ const Order = () => {
     setSubmitting(true);
     
     try {
-      const orderNumber = `ORD-${Math.floor(Math.random() * 900000 + 100000)}`;
-      const selectedProduct = products.find(p => p.id === formData.productId);
-      const totalPrice = selectedProduct ? selectedProduct.price * formData.quantity : 0;
+      const selectedProduct = products.find(p => p.id === formData.product_id);
+      const totalPrice = (selectedProduct?.price || 0) * formData.quantity;
+      const orderNumber = `ORD-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
-      const { data, error } = await supabase.from('orders').insert({
+      const { data: order, error } = await supabase.from('orders').insert({
         farm_id: farm.id,
         order_number: orderNumber,
-        customer_name: formData.customerName,
-        customer_phone: formData.customerPhone,
+        customer_name: formData.customer_name,
+        customer_phone: formData.customer_phone,
         total_price: totalPrice,
-        status: 'pending',
-        fulfillment_method: formData.fulfillmentMethod,
-        delivery_address: formData.deliveryAddress,
-        preferred_date: formData.preferredDate,
-        payment_method: formData.paymentMethod,
-        notes: formData.notes
-      }).select();
+        fulfillment_method: formData.fulfillment_method,
+        delivery_address: formData.delivery_address,
+        payment_method: formData.payment_method,
+        notes: formData.notes,
+        status: 'pending'
+      }).select().single();
 
       if (error) throw error;
 
-      if (data?.[0]) {
-        await supabase.from('order_items').insert({
-          order_id: data[0].id,
-          product_id: formData.productId,
-          quantity: formData.quantity,
-          price_at_time: selectedProduct.price
-        });
-      }
+      // Add order item
+      await supabase.from('order_items').insert({
+        order_id: order.id,
+        product_id: formData.product_id,
+        quantity: formData.quantity,
+        price_at_time: selectedProduct?.price || 0
+      });
 
       setSuccess(true);
-      window.scrollTo(0, 0);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      console.error("Error submitting order:", err);
-      alert("Something went wrong. Please try again.");
+      console.error("Order error:", err);
+      alert("There was an error placing your order. Please try again or contact us via WhatsApp.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (success) {
-    return (
-      <div className="pt-40 pb-32 px-4 bg-white">
-        <div className="container max-w-2xl bg-secondary bg-organic p-12 md:p-20 rounded-[60px] shadow-2xl text-center border border-primary/5">
-          <div className="w-24 h-24 bg-primary text-secondary rounded-3xl flex items-center justify-center mx-auto mb-10 shadow-xl rotate-6">
-            <Check size={48} />
+  const openWhatsApp = () => {
+    const contact = farm.contact_info || {};
+    const msg = `Hi New Dawn, I've just placed an order (or would like to) for ${products.find(p => p.id === formData.product_id)?.name}. My name is ${formData.customer_name}.`;
+    window.open(`https://wa.me/${contact.whatsapp?.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
+  if (loading) return (
+    <div className="h-screen w-full flex items-center justify-center bg-[#fcfaf5]">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#1d4d35]"></div>
+    </div>
+  );
+
+  if (success) return (
+    <div className="pt-32 pb-24 bg-[#fcfaf5] min-h-screen">
+      <div className="container mx-auto px-[5%] max-w-[800px] text-center">
+        <div className="bg-white p-12 md:p-20 rounded-[40px] shadow-2xl border border-[#e6dfd1] animate-fadeIn">
+          <div className="w-24 h-24 bg-[#1d4d35] rounded-full flex items-center justify-center text-white mx-auto mb-10 shadow-xl">
+            <CheckCircle2 size={48} />
           </div>
-          <h1 className="text-4xl md:text-5xl font-display font-bold text-primary mb-6">Order Received!</h1>
-          <p className="text-xl text-gray-500 mb-12 leading-relaxed">
-            Thank you for choosing **{farm.name}**. We've received your request and will contact you via WhatsApp for final confirmation and payment.
+          <h1 className="text-4xl md:text-5xl font-black text-[#183126] mb-6">Order Received!</h1>
+          <p className="text-xl text-[#5f6c65] mb-12 font-medium">
+            Thank you for choosing **{farm.name}**. We've received your inquiry and will contact you shortly to confirm stock and delivery.
           </p>
-          <div className="bg-white p-8 rounded-[32px] mb-12 text-left border border-primary/5 shadow-sm">
-            <div className="flex items-center gap-3 mb-4">
-              <ShieldCheck className="text-accent" />
-              <p className="text-sm font-bold text-primary uppercase tracking-widest">Your Next Steps</p>
-            </div>
-            <ul className="text-gray-600 space-y-4 font-medium">
-              <li className="flex gap-3"><span className="text-accent font-bold">01.</span> Farm manager verifies stock availability</li>
-              <li className="flex gap-3"><span className="text-accent font-bold">02.</span> We send a WhatsApp confirmation & invoice</li>
-              <li className="flex gap-3"><span className="text-accent font-bold">03.</span> Payment processed & fulfillment scheduled</li>
-            </ul>
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
+            <button 
+              onClick={openWhatsApp}
+              className="px-10 py-5 bg-[#28c76f] text-white font-black rounded-full shadow-lg hover:bg-[#21a55c] transition-all flex items-center justify-center gap-2"
+            >
+              <MessageCircle size={22} /> Confirm on WhatsApp
+            </button>
+            <button 
+              onClick={() => navigate(`/${farm.slug}`)}
+              className="px-10 py-5 bg-[#fcfaf5] border border-[#d8d0c1] text-[#183126] font-black rounded-full hover:bg-gray-50 transition-all"
+            >
+              Return Home
+            </button>
           </div>
-          <button onClick={() => navigate(`/${farm.slug}`)} className="btn btn-primary px-12 py-5 shadow-2xl w-full sm:w-auto">
-            Back to Our Farm Home
-          </button>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+
+  const selectedProduct = products.find(p => p.id === formData.product_id);
 
   return (
-    <div className="pt-40 pb-32 px-4 bg-white min-h-screen">
-      <div className="container max-w-5xl">
-        <div className="text-center mb-16">
-          <span className="uppercase tracking-[0.3em] font-bold text-accent mb-4 inline-block">Direct From Farm</span>
-          <h1 className="text-5xl md:text-7xl font-display font-bold text-primary">Place Your <span className="text-brown italic">Order</span></h1>
+    <div className="pt-24 bg-[#fcfaf5] min-h-screen">
+      <section className="bg-[#1d4d35] pt-32 pb-24 text-white relative overflow-hidden">
+        <div className="container mx-auto px-[5%] max-w-[1200px] relative z-10">
+          <h1 className="text-5xl md:text-7xl font-black mb-6 tracking-tight">Secure Your <span className="text-[#fcfaf5] italic">Order</span></h1>
+          <p className="text-[#d3ddd7] text-xl max-w-2xl font-medium">
+            Fill in your details below. We'll verify stock levels and get back to you immediately for payment and fulfillment.
+          </p>
         </div>
+        <div className="absolute inset-0 bg-organic opacity-5 pointer-events-none"></div>
+      </section>
 
-        <div className="grid lg:grid-cols-5 gap-16 bg-secondary bg-organic rounded-[60px] border border-primary/5 shadow-2xl overflow-hidden p-8 md:p-12">
-          {/* Info Side */}
-          <div className="lg:col-span-2 flex flex-col justify-center">
-            <div className="bg-primary p-12 rounded-[40px] text-white shadow-xl relative overflow-hidden">
-               <div className="relative z-10">
-                <h2 className="text-3xl font-display font-bold mb-6 italic text-secondary">Simple & Reliable</h2>
-                <p className="text-lg opacity-80 mb-10 leading-relaxed">
-                  Every order is hand-picked and verified for quality. Raising our poultry with care means delivering only the best to your table.
-                </p>
-                
-                <div className="space-y-8 mb-12">
-                  <div className="flex gap-5 items-start">
-                    <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center flex-shrink-0">
-                      <ShieldCheck className="text-accent" size={24} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-white">Quality Promise</p>
-                      <p className="text-sm opacity-60">Naturally raised & healthy stock.</p>
-                    </div>
+      <div className="container mx-auto px-[5%] max-w-[1200px] -mt-12 mb-24 relative z-20">
+        <div className="grid lg:grid-cols-12 gap-10">
+          {/* Order Form */}
+          <div className="lg:col-span-8">
+            <div className="bg-white p-10 md:p-14 rounded-[40px] shadow-2xl border border-[#e6dfd1]">
+              <form onSubmit={handleSubmit} className="space-y-10">
+                <div className="grid md:grid-cols-2 gap-10">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1d4d35]">Your Full Name</label>
+                    <input 
+                      required
+                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#1d4d35] outline-none transition-all"
+                      placeholder="e.g. Sipho Nkosi"
+                      value={formData.customer_name}
+                      onChange={e => setFormData({...formData, customer_name: e.target.value})}
+                    />
                   </div>
-                  <div className="flex gap-5 items-start">
-                    <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center flex-shrink-0">
-                      <Truck className="text-accent" size={24} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-white">Local Transport</p>
-                      <p className="text-sm opacity-60">Safe delivery across Polokwane.</p>
-                    </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1d4d35]">Phone Number (WhatsApp)</label>
+                    <input 
+                      required
+                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#1d4d35] outline-none transition-all"
+                      placeholder="e.g. 015 004 0130"
+                      value={formData.customer_phone}
+                      onChange={e => setFormData({...formData, customer_phone: e.target.value})}
+                    />
                   </div>
                 </div>
-                
-                <div className="pt-8 border-t border-white/10">
-                  <p className="text-xs font-bold uppercase tracking-widest text-accent mb-4">Bulk Request?</p>
-                  <a 
-                    href={`https://wa.me/${farm.contact_info?.whatsapp?.replace(/[^0-9]/g, '')}`}
-                    className="btn btn-whatsapp w-full shadow-lg"
-                    target="_blank"
-                    rel="noopener noreferrer"
+
+                <div className="grid md:grid-cols-2 gap-10">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1d4d35]">Select Product</label>
+                    <select 
+                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#1d4d35] outline-none transition-all appearance-none"
+                      value={formData.product_id}
+                      onChange={e => setFormData({...formData, product_id: e.target.value})}
+                    >
+                      <option value="">Choose a product...</option>
+                      {products.map(p => (
+                        <option key={p.id} value={p.id}>{p.name} - R{p.price}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1d4d35]">Quantity</label>
+                    <input 
+                      type="number"
+                      min="1"
+                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#1d4d35] outline-none transition-all"
+                      value={formData.quantity}
+                      onChange={e => setFormData({...formData, quantity: parseInt(e.target.value) || 1})}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1d4d35] block">Fulfillment Method</label>
+                  <div className="grid grid-cols-2 gap-6">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({...formData, fulfillment_method: 'pickup'})}
+                      className={`p-6 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all ${
+                        formData.fulfillment_method === 'pickup' ? 'bg-[#1d4d35] border-[#1d4d35] text-white shadow-lg' : 'bg-white border-[#e6dfd1] text-[#183126] hover:border-[#1d4d35]'
+                      }`}
+                    >
+                      <ShoppingBag size={24} />
+                      <span className="font-black text-sm uppercase tracking-widest">Farm Pickup</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({...formData, fulfillment_method: 'delivery'})}
+                      className={`p-6 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all ${
+                        formData.fulfillment_method === 'delivery' ? 'bg-[#1d4d35] border-[#1d4d35] text-white shadow-lg' : 'bg-white border-[#e6dfd1] text-[#183126] hover:border-[#1d4d35]'
+                      }`}
+                    >
+                      <Truck size={24} />
+                      <span className="font-black text-sm uppercase tracking-widest">Local Delivery</span>
+                    </button>
+                  </div>
+                </div>
+
+                {formData.fulfillment_method === 'delivery' && (
+                  <div className="space-y-2 animate-fadeIn">
+                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1d4d35]">Delivery Address (Polokwane & Surroundings)</label>
+                    <textarea 
+                      required
+                      rows="3"
+                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-3xl font-bold text-[#183126] focus:ring-2 focus:ring-[#1d4d35] outline-none transition-all resize-none"
+                      placeholder="e.g. 123 Main St, Polokwane, 0700"
+                      value={formData.delivery_address}
+                      onChange={e => setFormData({...formData, delivery_address: e.target.value})}
+                    />
+                  </div>
+                )}
+
+                <div className="pt-10 border-t border-[#e6dfd1]">
+                  <button 
+                    disabled={submitting}
+                    className="w-full py-6 bg-[#1d4d35] text-white font-black text-xl rounded-full shadow-2xl hover:scale-[1.02] flex items-center justify-center gap-3 transition-all disabled:opacity-50"
                   >
-                    <MessageCircle size={20} className="mr-2" /> Chat for Bulk Pricing
-                  </a>
+                    {submitting ? 'Processing...' : 'Complete Order Request'}
+                    <ArrowRight size={24} />
+                  </button>
+                  <p className="text-center text-[#5f6c65] text-xs font-bold mt-6 uppercase tracking-widest">No immediate payment required</p>
                 </div>
-              </div>
-              {/* Abstract overlay */}
-              <div className="absolute bottom-0 right-0 w-64 h-64 bg-accent opacity-5 rounded-full translate-x-1/2 translate-y-1/2"></div>
+              </form>
             </div>
           </div>
 
-          {/* Form Side */}
-          <div className="lg:col-span-3">
-            <form onSubmit={handleSubmit} className="space-y-8">
-              <div className="grid sm:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">Your Full Name</label>
-                  <div className="relative">
-                    <User className="absolute left-6 top-1/2 -translate-y-1/2 text-primary opacity-30" size={18} />
-                    <input 
-                      required
-                      type="text" 
-                      className="w-full bg-white pl-14 pr-6 py-5 rounded-3xl outline-none focus:ring-2 focus:ring-accent border-none shadow-sm"
-                      placeholder="e.g. Samuel Mofa"
-                      value={formData.customerName}
-                      onChange={(e) => setFormData({...formData, customerName: e.target.value})}
-                    />
+          {/* Checkout Sidebar */}
+          <div className="lg:col-span-4">
+            <div className="sticky top-32 space-y-8">
+              <div className="bg-[#183126] text-white p-10 rounded-[40px] shadow-2xl relative overflow-hidden">
+                <h3 className="text-2xl font-black mb-10 border-b border-white/10 pb-6 uppercase tracking-tight">Order Summary</h3>
+                <div className="space-y-6 mb-10">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#d3ddd7] font-bold">Product</span>
+                    <span className="font-black">{selectedProduct?.name || '---'}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#d3ddd7] font-bold">Quantity</span>
+                    <span className="font-black">x {formData.quantity}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#d3ddd7] font-bold">Price</span>
+                    <span className="font-black">R{selectedProduct?.price || 0}</span>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">WhatsApp / Phone</label>
-                  <div className="relative">
-                    <Phone className="absolute left-6 top-1/2 -translate-y-1/2 text-primary opacity-30" size={18} />
-                    <input 
-                      required
-                      type="tel" 
-                      className="w-full bg-white pl-14 pr-6 py-5 rounded-3xl outline-none focus:ring-2 focus:ring-accent border-none shadow-sm"
-                      placeholder="012 345 6789"
-                      value={formData.customerPhone}
-                      onChange={(e) => setFormData({...formData, customerPhone: e.target.value})}
-                    />
+                <div className="flex justify-between items-center border-t border-white/10 pt-8 mt-10">
+                  <span className="text-xl font-black text-[#d6c27c]">Estimated Total</span>
+                  <span className="text-3xl font-black">R{(selectedProduct?.price || 0) * formData.quantity}</span>
+                </div>
+                {/* Pattern */}
+                <div className="absolute inset-0 bg-organic opacity-5 pointer-events-none"></div>
+              </div>
+
+              <div className="bg-[#f5f0e6] p-10 rounded-[40px] border border-[#e6dfd1] space-y-6">
+                <div className="flex gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-[#1d4d35] flex-shrink-0 shadow-sm">
+                    <Info size={20} />
+                  </div>
+                  <div>
+                    <p className="font-black text-[#183126] mb-1">What happens next?</p>
+                    <p className="text-sm text-[#5f6c65] leading-relaxed">We will verify current stock and send you a confirmation message via WhatsApp to finalize your delivery or pickup time.</p>
                   </div>
                 </div>
               </div>
-
-              <div className="grid sm:grid-cols-3 gap-8">
-                <div className="sm:col-span-2 space-y-2">
-                  <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">Choose Product</label>
-                  <select 
-                    required
-                    className="w-full bg-white px-6 py-5 rounded-3xl outline-none focus:ring-2 focus:ring-accent border-none shadow-sm appearance-none font-bold text-primary"
-                    value={formData.productId}
-                    onChange={(e) => setFormData({...formData, productId: e.target.value})}
-                  >
-                    <option value="">Select a Farm Product...</option>
-                    {products.map(p => (
-                      <option key={p.id} value={p.id}>{p.name} — R{p.price}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">Quantity</label>
-                  <input 
-                    required
-                    type="number" 
-                    min="1"
-                    className="w-full bg-white px-6 py-5 rounded-3xl outline-none focus:ring-2 focus:ring-accent border-none shadow-sm font-bold text-primary"
-                    value={formData.quantity}
-                    onChange={(e) => setFormData({...formData, quantity: parseInt(e.target.value)})}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">Fulfillment Preference</label>
-                <div className="grid grid-cols-2 gap-4">
-                  <button 
-                    type="button"
-                    onClick={() => setFormData({...formData, fulfillmentMethod: 'pickup'})}
-                    className={`py-5 rounded-3xl font-bold uppercase tracking-widest text-[11px] transition-all border-2 ${
-                      formData.fulfillmentMethod === 'pickup' ? 'bg-primary text-secondary border-primary' : 'bg-white text-primary border-primary/10'
-                    }`}
-                  >
-                    Self-Pickup at Farm
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setFormData({...formData, fulfillmentMethod: 'delivery'})}
-                    className={`py-5 rounded-3xl font-bold uppercase tracking-widest text-[11px] transition-all border-2 ${
-                      formData.fulfillmentMethod === 'delivery' ? 'bg-primary text-secondary border-primary' : 'bg-white text-primary border-primary/10'
-                    }`}
-                  >
-                    Local Polokwane Delivery
-                  </button>
-                </div>
-              </div>
-
-              {formData.fulfillmentMethod === 'delivery' && (
-                <div className="space-y-2">
-                  <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">Delivery Address</label>
-                  <div className="relative">
-                    <MapPin className="absolute left-6 top-6 text-primary opacity-30" size={18} />
-                    <textarea 
-                      className="w-full bg-white pl-14 pr-6 py-5 rounded-3xl outline-none focus:ring-2 focus:ring-accent border-none shadow-sm resize-none"
-                      placeholder="Your street address or landmark in Polokwane"
-                      rows="2"
-                      value={formData.deliveryAddress}
-                      onChange={(e) => setFormData({...formData, deliveryAddress: e.target.value})}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <button 
-                type="submit" 
-                disabled={submitting}
-                className="btn btn-primary w-full py-6 text-xl mt-6 shadow-2xl disabled:opacity-50"
-              >
-                {submitting ? 'Authenticating Order...' : 'Confirm Farm Order'} <ChevronRight size={24} />
-              </button>
-              <div className="flex items-center justify-center gap-2 text-primary opacity-40">
-                <ShieldCheck size={14} />
-                <p className="text-[10px] uppercase tracking-widest font-bold">Secure Local Order Processing</p>
-              </div>
-            </form>
+            </div>
           </div>
         </div>
       </div>

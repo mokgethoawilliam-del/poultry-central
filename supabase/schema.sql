@@ -18,12 +18,17 @@ CREATE TABLE IF NOT EXISTS public.farms (
     farm_type TEXT DEFAULT 'poultry', -- poultry, dairy, etc.
     location TEXT,
     branding JSONB DEFAULT '{
-        "primary_color": "#1b4332",
-        "secondary_color": "#f5f5dc",
-        "accent_color": "#d4af37",
-        "logo_url": null,
-        "hero_headline": "Fresh Poultry. Trusted Supply. Delivered with Care."
+        "primary_color": "#1d4d35",
+        "secondary_color": "#fcfaf5",
+        "accent_color": "#8b6b2f",
+        "hero_headline": "Fresh Poultry. Trusted Farm. Delivered to You."
     }'::jsonb,
+    about_story TEXT DEFAULT 'At The New Dawn Poultry Farm, we believe good food starts with trust, consistency, and proper care.',
+    why_content JSONB DEFAULT '[
+        {"title": "Freshness You Can Trust", "text": "We focus on clean, quality poultry products that customers can feel good about buying."},
+        {"title": "Simple Ordering", "text": "We keep the process easy through direct enquiries, WhatsApp, and quick support."},
+        {"title": "Local Convenience", "text": "Serving Polokwane and nearby areas with practical delivery and booking options."}
+    ]'::jsonb,
     contact_info JSONB DEFAULT '{}'::jsonb,
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -115,7 +120,19 @@ CREATE TABLE IF NOT EXISTS public.inventory_logs (
     logged_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 8. Row Level Security (RLS)
+-- 8. Testimonials
+CREATE TABLE IF NOT EXISTS public.testimonials (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    farm_id UUID REFERENCES public.farms(id) ON DELETE CASCADE,
+    author_name TEXT NOT NULL,
+    author_role TEXT, -- Local Customer, Reseller, etc.
+    quote TEXT NOT NULL,
+    rating INTEGER DEFAULT 5,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 9. Row Level Security (RLS)
 ALTER TABLE public.farms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.batches ENABLE ROW LEVEL SECURITY;
@@ -123,6 +140,7 @@ ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.inventory_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.testimonials ENABLE ROW LEVEL SECURITY;
 
 -- Policies (Simplified for Public Access - initially)
 -- In a real SaaS, these would use auth.uid() or vendor_id checks
@@ -133,6 +151,7 @@ CREATE POLICY "Public all on orders" ON public.orders FOR ALL USING (true);
 CREATE POLICY "Public all on order_items" ON public.order_items FOR ALL USING (true);
 CREATE POLICY "Public all on bookings" ON public.bookings FOR ALL USING (true);
 CREATE POLICY "Public all on inventory_logs" ON public.inventory_logs FOR ALL USING (true);
+CREATE POLICY "Public read access on testimonials" ON public.testimonials FOR SELECT USING (true);
 
 -- 9. Initial Seed Data: The New Dawn Poultry Farm
 INSERT INTO public.farms (name, slug, farm_type, location, branding, contact_info)
@@ -148,12 +167,24 @@ VALUES (
         "hero_headline": "Fresh Poultry. Trusted Supply. Delivered with Care."
     }'::jsonb,
     '{
-        "phone": "+27 12 345 6789",
-        "whatsapp": "+27 12 345 6789",
-        "address": "123 Farm Road, Polokwane, 0700",
-        "operating_hours": "Mon-Sat: 08:00 - 17:00"
+        "phone": "015 004 0130",
+        "whatsapp": "27150040130",
+        "address": "Polokwane, South Africa",
+        "operating_hours": "Monday to Saturday"
     }'::jsonb
 ) ON CONFLICT (slug) DO NOTHING;
+
+-- Seed Testimonials
+INSERT INTO public.testimonials (farm_id, author_name, author_role, quote)
+SELECT id, 'Local Customer', 'Consumer', 'Very reliable supplier. The chickens are always fresh and the service is excellent.'
+FROM public.farms WHERE slug = 'new-dawn'
+UNION ALL
+SELECT id, 'Reseller', 'Business', 'We trust The New Dawn Poultry Farm for consistent stock and good customer support.'
+FROM public.farms WHERE slug = 'new-dawn'
+UNION ALL
+SELECT id, 'Family Buyer', 'Consumer', 'Ordering is simple, delivery is smooth, and the quality is always good.'
+FROM public.farms WHERE slug = 'new-dawn'
+ON CONFLICT DO NOTHING;
 
 -- Seed Products for New Dawn
 -- We'll need the ID later, but for now just seed with IDs if we can or generic insert
