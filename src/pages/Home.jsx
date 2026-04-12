@@ -9,9 +9,7 @@ import {
   Heart, 
   ShieldCheck, 
   MessageCircle,
-  Clock,
-  Instagram,
-  Facebook
+  Clock
 } from 'lucide-react';
 
 // Custom assets
