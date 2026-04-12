@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
 import { 
   BarChart3, 
@@ -26,33 +25,27 @@ import {
 } from 'lucide-react';
 
 const Dashboard = () => {
-  const { farm } = useOutletContext();
   const [activeTab, setActiveTab] = useState('Overview');
-  const [farmData, setFarmData] = useState(farm || null);
+  const [farmData, setFarmData] = useState(null);
   const [orders, setOrders] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState('');
 
-  // Simulation of data and fetching farm data
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        if (!farmData) {
-          const { data: f } = await supabase.from('farms').select('*').single();
-          setFarmData(f);
-        }
+        // Fetch farm directly — /admin is a standalone global route
+        const { data: farm } = await supabase.from('farms').select('*').single();
+        setFarmData(farm);
 
         // Fetch testimonials
-        const currentFarmId = farm?.id || farmData?.id;
-        if (!currentFarmId) return;
-
         const { data: testData } = await supabase
           .from('testimonials')
           .select('*')
-          .eq('farm_id', currentFarmId)
+          .eq('farm_id', farm.id)
           .order('created_at', { ascending: false });
         setTestimonials(testData || []);
 

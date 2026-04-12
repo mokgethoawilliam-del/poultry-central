@@ -20,8 +20,11 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Redirect root to new-dawn for now */}
+        {/* Redirect root to new-dawn */}
         <Route path="/" element={<Navigate to="/new-dawn" replace />} />
+
+        {/* Global Farmer Dashboard Route (Back Office) - always at /admin */}
+        <Route path="/admin" element={<Dashboard />} />
 
         {/* Dynamic Farm Routes (Customer Site) */}
         <Route path="/:farmSlug" element={<MainLayout />}>
@@ -32,9 +35,6 @@ function App() {
           <Route path="contact" element={<Contact />} />
           <Route path="about" element={<Placeholder title="About Our Farm" />} />
           <Route path="gallery" element={<Placeholder title="Gallery" />} />
-          
-          {/* Farmer Dashboard Route (Back Office) */}
-          <Route path="admin" element={<Dashboard />} />
         </Route>
       </Routes>
     </BrowserRouter>
