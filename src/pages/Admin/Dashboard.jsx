@@ -13,33 +13,63 @@ import {
   Plus,
   TrendingUp,
   TrendingDown,
-  Clock
+  Clock,
+  Layout,
+  Image as ImageIcon,
+  CheckCircle2,
+  Save
 } from 'lucide-react';
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('Overview');
+  const [farmData, setFarmData] = useState(null);
   const [orders, setOrders] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [saveStatus, setSaveStatus] = useState('');
 
-  // Simulation of data for the demo
+  // Simulation of data and fetching farm data
   useEffect(() => {
-    // In a real app, we'd fetch from Supabase
-    const timer = setTimeout(() => {
-      setOrders([
-        { id: 1, number: 'ORD-123456', customer: 'John Smith', total: 450, status: 'New', time: '10 mins ago' },
-        { id: 2, number: 'ORD-123457', customer: 'Sarah Jones', total: 120, status: 'Confirmed', time: '1 hour ago' },
-        { id: 3, number: 'ORD-123458', customer: 'David Mike', total: 850, status: 'Delivered', time: '3 hours ago' },
-      ]);
-      setInventory([
-        { id: 1, item: 'Live Broilers (Batch A)', stock: 45, unit: 'heads', status: 'In Stock' },
-        { id: 2, item: 'Fresh Eggs', stock: 12, unit: 'crates', status: 'Low Stock' },
-        { id: 3, item: 'Day-Old Chicks', stock: 150, unit: 'heads', status: 'In Stock' },
-      ]);
-      setLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // In a real app, we'd fetch the specific farm for the logged in user
+        const { data: farm } = await supabase.from('farms').select('*').single();
+        setFarmData(farm);
+
+        // Simulated orders and inventory
+        setOrders([
+          { id: 1, number: 'ORD-123456', customer: 'John Smith', total: 450, status: 'New', time: '10 mins ago' },
+          { id: 2, number: 'ORD-123457', customer: 'Sarah Jones', total: 120, status: 'Confirmed', time: '1 hour ago' },
+          { id: 3, number: 'ORD-123458', customer: 'David Mike', total: 850, status: 'Delivered', time: '3 hours ago' },
+        ]);
+        setInventory([
+          { id: 1, item: 'Live Broilers (Batch A)', stock: 45, unit: 'heads', status: 'In Stock' },
+          { id: 2, item: 'Fresh Eggs', stock: 12, unit: 'crates', status: 'Low Stock' },
+          { id: 3, item: 'Day-Old Chicks', stock: 150, unit: 'heads', status: 'In Stock' },
+        ]);
+      } catch (err) {
+        console.error("Dashboard data fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, []);
+
+  const handleUpdateFarm = async (e) => {
+    e.preventDefault();
+    setSaveStatus('Saving...');
+    try {
+      const { error } = await supabase.from('farms').update(farmData).eq('id', farmData.id);
+      if (error) throw error;
+      setSaveStatus('Saved Successfully');
+      setTimeout(() => setSaveStatus(''), 3000);
+    } catch (err) {
+      console.error("Update error:", err);
+      setSaveStatus('Error Saving');
+    }
+  };
 
   const SidebarItem = ({ icon: Icon, label, active, onClick }) => (
     <button 
@@ -71,26 +101,37 @@ const Dashboard = () => {
     </div>
   );
 
+  if (loading) return (
+    <div className="h-screen w-full flex items-center justify-center bg-gray-50">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+    </div>
+  );
+
   return (
     <div className="flex h-screen bg-gray-50 font-sans">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r flex flex-col pt-8">
-        <div className="px-6 mb-10 flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white font-bold">D</div>
-          <span className="text-xl font-bold text-primary">BackOffice</span>
+      <aside className="w-72 bg-white border-r flex flex-col pt-8">
+        <div className="px-6 mb-10 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-lg">N</div>
+          <div className="flex flex-col">
+            <span className="text-sm font-bold text-primary leading-none">New Dawn</span>
+            <span className="text-[10px] uppercase tracking-widest text-accent font-bold">Admin Portal</span>
+          </div>
         </div>
         
         <nav className="flex-grow">
           <SidebarItem icon={BarChart3} label="Overview" active={activeTab === 'Overview'} onClick={() => setActiveTab('Overview')} />
           <SidebarItem icon={ShoppingBag} label="Orders" active={activeTab === 'Orders'} onClick={() => setActiveTab('Orders')} />
           <SidebarItem icon={Package} label="Inventory" active={activeTab === 'Inventory'} onClick={() => setActiveTab('Inventory')} />
-          <SidebarItem icon={CalendarIcon} label="Calendar" active={activeTab === 'Calendar'} onClick={() => setActiveTab('Calendar')} />
-          <SidebarItem icon={Users} label="Customers" active={activeTab === 'Customers'} onClick={() => setActiveTab('Customers')} />
-          <SidebarItem icon={CreditCard} label="Payments" active={activeTab === 'Payments'} onClick={() => setActiveTab('Payments')} />
+          <SidebarItem icon={Layout} label="Site Editor" active={activeTab === 'Site Editor'} onClick={() => setActiveTab('Site Editor')} />
+          <SidebarItem icon={Settings} label="Settings" active={activeTab === 'Settings'} onClick={() => setActiveTab('Settings')} />
         </nav>
 
         <div className="p-6 border-t">
-          <SidebarItem icon={Settings} label="Settings" active={false} />
+          <div className="bg-primary bg-opacity-5 p-4 rounded-2xl">
+            <p className="text-xs font-bold text-primary uppercase tracking-tighter mb-1">Subscription</p>
+            <p className="text-sm font-semibold text-primary">Farmer Pro Plan</p>
+          </div>
         </div>
       </aside>
 
@@ -98,7 +139,7 @@ const Dashboard = () => {
       <main className="flex-grow flex flex-col overflow-hidden">
         {/* Top Header */}
         <header className="h-20 bg-white border-b px-10 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-primary">{activeTab}</h2>
+          <h2 className="text-2xl font-display font-bold text-primary">{activeTab}</h2>
           <div className="flex items-center gap-6">
             <button className="relative p-2 text-gray-400 hover:text-primary">
               <Bell size={24} />
@@ -106,10 +147,10 @@ const Dashboard = () => {
             </button>
             <div className="flex items-center gap-3 border-l pl-6">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold text-primary">Farm Owner</p>
-                <p className="text-xs text-gray-500">The New Dawn Farm</p>
+                <p className="text-sm font-bold text-primary">Farm Manager</p>
+                <p className="text-xs text-gray-500">{farmData?.name}</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-primary font-bold">FD</div>
+              <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-primary font-bold">ND</div>
             </div>
           </div>
         </header>
@@ -123,12 +164,12 @@ const Dashboard = () => {
                 <StatCard label="Today's Sales" value="R4,250" trend="+12.5%" trendUp={true} icon={CreditCard} />
                 <StatCard label="Pending Orders" value="12" trend="+3" trendUp={false} icon={ShoppingBag} />
                 <StatCard label="Total Stock" value="1,240" trend="-50" trendUp={false} icon={Package} />
-                <StatCard label="Mortality Rate" value="0.2%" trend="-0.1%" trendUp={true} icon={TrendingDown} />
+                <StatCard label="Live Batches" value="4" trend="Healthy" trendUp={true} icon={CheckCircle2} />
               </div>
 
               <div className="grid lg:grid-cols-2 gap-10">
                 {/* Recent Orders */}
-                <div className="bg-white p-8 rounded-3xl shadow-sm border">
+                <div className="bg-white p-8 rounded-[32px] shadow-sm border">
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xl font-bold text-primary">Recent Orders</h3>
                     <button className="text-sm font-bold text-primary hover:underline">View All</button>
@@ -155,26 +196,27 @@ const Dashboard = () => {
                 </div>
 
                 {/* Low Stock Alerts */}
-                <div className="bg-white p-8 rounded-3xl shadow-sm border">
+                <div className="bg-white p-8 rounded-[32px] shadow-sm border">
                   <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-bold text-primary">Low Stock Alerts</h3>
-                    <Plus className="text-primary cursor-pointer hover:rotate-90 transition-transform" />
+                    <h3 className="text-xl font-bold text-primary">Stock Alert</h3>
+                    <button className="p-2 rounded-xl bg-primary text-secondary hover:bg-primary-light transition-colors">
+                      <Plus size={20} />
+                    </button>
                   </div>
                   <div className="space-y-4">
                     {inventory.filter(i => i.status === 'Low Stock').map(item => (
-                      <div key={item.id} className="p-5 border-2 border-red-100 bg-red-50 rounded-2xl flex items-center justify-between">
+                      <div key={item.id} className="p-6 border-2 border-red-100 bg-red-50 rounded-2xl flex items-center justify-between">
                         <div>
                           <p className="font-bold text-red-700">{item.item}</p>
-                          <p className="text-sm text-red-500">Only {item.stock} {item.unit} left</p>
+                          <p className="text-sm text-red-500">Only {item.stock} {item.unit} remaining</p>
                         </div>
-                        <button className="bg-white text-red-600 px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-red-600 hover:text-white transition-all">
+                        <button className="bg-white text-red-600 px-6 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-red-600 hover:text-white transition-all">
                           Restock
                         </button>
                       </div>
                     ))}
-                    <div className="p-5 bg-gray-50 rounded-2xl flex items-center justify-between">
-                      <p className="text-gray-600 font-medium">Batch B (Broilers)</p>
-                      <p className="font-bold text-primary">95% Ready</p>
+                    <div className="p-6 bg-gray-50 rounded-2xl flex items-center justify-between border border-dashed border-primary/20">
+                      <p className="text-gray-600 font-semibold italic">Manage all batches in inventory section &rarr;</p>
                     </div>
                   </div>
                 </div>
@@ -182,11 +224,112 @@ const Dashboard = () => {
             </div>
           )}
 
-          {activeTab !== 'Overview' && (
-            <div className="bg-white p-20 rounded-3xl shadow-sm border text-center text-gray-400">
-              <Package size={64} className="mx-auto mb-4 opacity-20" />
-              <p className="text-xl font-bold">Section Under Construction</p>
-              <p>We're putting the finishing touches on this part of your dashboard.</p>
+          {activeTab === 'Site Editor' && (
+            <div className="max-w-4xl mx-auto space-y-10">
+              <div className="bg-white p-10 rounded-[40px] shadow-sm border">
+                <div className="flex justify-between items-center mb-10">
+                  <h3 className="text-2xl font-display font-bold text-primary text-accent">Real Farm Website Design</h3>
+                  {saveStatus && <span className="px-4 py-2 bg-primary text-secondary rounded-full font-bold text-xs animate-pulse">{saveStatus}</span>}
+                </div>
+
+                <form onSubmit={handleUpdateFarm} className="space-y-8">
+                  {/* Basic Info */}
+                  <div className="grid md:grid-cols-2 gap-8">
+                    <div className="space-y-2">
+                      <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">Farm/Store Name</label>
+                      <input 
+                        className="w-full bg-gray-50 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-accent"
+                        value={farmData?.name || ''} 
+                        onChange={(e) => setFarmData({...farmData, name: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">Store Slug (URL)</label>
+                      <input 
+                        className="w-full bg-gray-200 border-none px-6 py-4 rounded-2xl outline-none cursor-not-allowed"
+                        value={farmData?.slug || ''} 
+                        readOnly
+                      />
+                    </div>
+                  </div>
+
+                  {/* About Story */}
+                  <div className="space-y-2">
+                    <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">Our Farm Story (Emotional Section)</label>
+                    <textarea 
+                      rows="4"
+                      className="w-full bg-gray-50 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-accent resize-none"
+                      value={farmData?.about_text || ''} 
+                      onChange={(e) => setFarmData({...farmData, about_text: e.target.value})}
+                    />
+                  </div>
+
+                  {/* Contact Details */}
+                  <div className="grid md:grid-cols-2 gap-8">
+                    <div className="space-y-2">
+                      <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">WhatsApp Number</label>
+                      <input 
+                        className="w-full bg-gray-50 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-accent"
+                        value={farmData?.contact_info?.whatsapp || ''} 
+                        onChange={(e) => setFarmData({...farmData, contact_info: {...farmData.contact_info, whatsapp: e.target.value}})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">Business Phone</label>
+                      <input 
+                        className="w-full bg-gray-50 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-accent"
+                        value={farmData?.contact_info?.phone || ''} 
+                        onChange={(e) => setFarmData({...farmData, contact_info: {...farmData.contact_info, phone: e.target.value}})}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Address & Hours */}
+                  <div className="grid md:grid-cols-2 gap-8">
+                    <div className="space-y-2">
+                      <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">Physical Address (Polokwane)</label>
+                      <input 
+                        className="w-full bg-gray-50 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-accent"
+                        value={farmData?.contact_info?.address || ''} 
+                        onChange={(e) => setFarmData({...farmData, contact_info: {...farmData.contact_info, address: e.target.value}})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">Operating Hours</label>
+                      <input 
+                        className="w-full bg-gray-50 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-accent"
+                        value={farmData?.contact_info?.operating_hours || ''} 
+                        onChange={(e) => setFarmData({...farmData, contact_info: {...farmData.contact_info, operating_hours: e.target.value}})}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t">
+                    <button type="submit" className="btn btn-primary px-12 py-5 shadow-2xl flex items-center gap-3">
+                      <Save size={20} /> Update Website Design
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Visual Assets Placeholder */}
+              <div className="bg-white p-10 rounded-[40px] shadow-sm border flex flex-col items-center justify-center py-20 bg-organic bg-secondary bg-opacity-10">
+                <ImageIcon size={64} className="text-primary opacity-20 mb-6" />
+                <h4 className="text-2xl font-display font-bold text-primary mb-2">Farm Image Gallery</h4>
+                <p className="text-gray-500 mb-8 max-w-sm text-center">Upload real photos of your farm, chickens, and eggs to replace the brand placeholders.</p>
+                <div className="flex gap-4">
+                  <button className="px-8 py-3 bg-white border border-primary/10 rounded-xl font-bold text-sm shadow-sm hover:border-accent">Upload Photos</button>
+                  <button className="px-8 py-3 bg-primary text-secondary rounded-xl font-bold text-sm shadow-sm">View Current Gallery</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab !== 'Overview' && activeTab !== 'Site Editor' && (
+            <div className="bg-white p-24 rounded-[40px] shadow-sm border text-center text-gray-400">
+              <Package size={80} className="mx-auto mb-6 opacity-20" />
+              <p className="text-2xl font-display font-bold text-primary">Section Coming Soon</p>
+              <p className="text-lg">We're building this part of your farm's management suite.</p>
             </div>
           )}
         </div>

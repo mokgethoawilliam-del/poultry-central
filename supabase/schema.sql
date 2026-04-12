@@ -1,6 +1,15 @@
 -- Multi-Tenant Poultry SaaS Schema
 -- Target: Supabase (PostgreSQL)
 
+-- Clean up existing tables to ensure a fresh setup
+DROP TABLE IF EXISTS public.inventory_logs CASCADE;
+DROP TABLE IF EXISTS public.bookings CASCADE;
+DROP TABLE IF EXISTS public.order_items CASCADE;
+DROP TABLE IF EXISTS public.orders CASCADE;
+DROP TABLE IF EXISTS public.batches CASCADE;
+DROP TABLE IF EXISTS public.products CASCADE;
+DROP TABLE IF EXISTS public.farms CASCADE;
+
 -- 1. Farms (Vendors/Tenants)
 CREATE TABLE IF NOT EXISTS public.farms (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -1,116 +1,135 @@
 import React from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { Mail, Phone, MapPin, Clock, MessageCircle, Send } from 'lucide-react';
+import { useOutletContext, Link } from 'react-router-dom';
+import { MapPin, Phone, MessageCircle, Clock, Send, ShieldCheck, ArrowRight } from 'lucide-react';
 
 const Contact = () => {
   const { farm } = useOutletContext();
   const contact = farm.contact_info || {};
 
   return (
-    <div className="pt-24 pb-20">
-      <section className="bg-primary py-20 text-white text-center">
-        <div className="container">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">Contact Us</h1>
-          <p className="text-secondary opacity-80 max-w-2xl mx-auto text-lg">
-            Have questions about our stock or services? Get in touch with the team at The New Dawn Poultry Farm.
+    <div className="pt-24 bg-white">
+      {/* Header */}
+      <section className="bg-primary pt-32 pb-24 text-white text-center relative overflow-hidden">
+        <div className="container relative z-10">
+          <span className="uppercase tracking-[0.3em] font-bold text-accent mb-6 inline-block">Connect With the Farm</span>
+          <h1 className="text-5xl md:text-7xl font-display font-bold mb-8">Contact <span className="text-secondary italic">Us</span></h1>
+          <p className="text-secondary opacity-80 max-w-3xl mx-auto text-xl leading-relaxed">
+            Have questions about our poultry stock, services, or farm visits? Reach out to our team in Polokwane directly.
           </p>
         </div>
+        <div className="absolute inset-0 bg-organic opacity-5 pointer-events-none"></div>
       </section>
 
-      <section className="section container">
-        <div className="grid lg:grid-cols-3 gap-12">
-          {/* Contact Details */}
-          <div className="lg:col-span-1 space-y-8">
-            <h2 className="text-3xl font-bold text-primary">Get In Touch</h2>
-            <p className="text-gray-500">We appreciate your interest in our farm. Reach out to us via any of these channels or fill out the form.</p>
-            
-            <div className="space-y-6">
-              <div className="flex gap-4 p-6 bg-secondary bg-opacity-20 rounded-2xl">
-                <div className="p-3 bg-primary text-secondary rounded-xl">
-                  <MapPin size={24} />
+      <section className="section bg-white">
+        <div className="container">
+          <div className="grid lg:grid-cols-2 gap-20">
+            {/* Contact Form */}
+            <div className="bg-secondary bg-organic p-10 md:p-16 rounded-[60px] border border-primary/5">
+              <h2 className="text-4xl font-display font-bold text-primary mb-8">Send a Message</h2>
+              <form className="space-y-8">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">Full Name</label>
+                    <input type="text" className="w-full bg-white px-6 py-4 rounded-3xl outline-none focus:ring-2 focus:ring-accent border-none shadow-sm" placeholder="Your Name" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">Phone Number</label>
+                    <input type="tel" className="w-full bg-white px-6 py-4 rounded-3xl outline-none focus:ring-2 focus:ring-accent border-none shadow-sm" placeholder="012 345 6789" />
+                  </div>
                 </div>
-                <div>
-                  <p className="font-bold text-primary">Our Farm</p>
-                  <p className="text-gray-600">{contact.address || '123 Farm Road, Polokwane, 0700'}</p>
+                <div className="space-y-2">
+                  <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">Inquiry Type</label>
+                  <select className="w-full bg-white px-6 py-4 rounded-3xl outline-none focus:ring-2 focus:ring-accent border-none shadow-sm appearance-none">
+                    <option>General Inquiry</option>
+                    <option>Bulk Quote Request</option>
+                    <option>Day-Old Chick Booking</option>
+                    <option>Farm Visit Schedule</option>
+                  </select>
                 </div>
-              </div>
-
-              <div className="flex gap-4 p-6 bg-secondary bg-opacity-20 rounded-2xl">
-                <div className="p-3 bg-primary text-secondary rounded-xl">
-                  <Phone size={24} />
+                <div className="space-y-2">
+                  <label className="text-xs uppercase tracking-widest font-bold text-primary opacity-60">Your Message</label>
+                  <textarea rows="5" className="w-full bg-white px-6 py-4 rounded-3xl outline-none focus:ring-2 focus:ring-accent border-none shadow-sm resize-none" placeholder="Tell us how we can help..."></textarea>
                 </div>
-                <div>
-                  <p className="font-bold text-primary">Call Us</p>
-                  <p className="text-gray-600">{contact.phone || '+27 12 345 6789'}</p>
-                </div>
-              </div>
-
-              <div className="flex gap-4 p-6 bg-secondary bg-opacity-20 rounded-2xl">
-                <div className="p-3 bg-primary text-secondary rounded-xl">
-                  <Clock size={24} />
-                </div>
-                <div>
-                  <p className="font-bold text-primary">Operating Hours</p>
-                  <p className="text-gray-600">{contact.operating_hours || 'Mon-Sat: 08:00 - 17:00'}</p>
-                </div>
-              </div>
+                <button className="btn btn-primary w-full py-5 text-lg shadow-xl">
+                  Send Your Inquiry <Send size={20} />
+                </button>
+              </form>
             </div>
 
-            <a 
-              href={`https://wa.me/${contact.whatsapp?.replace(/[^0-9]/g, '')}`}
-              className="btn btn-whatsapp w-full py-4 text-lg"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <MessageCircle className="mr-2" /> Message on WhatsApp
-            </a>
-          </div>
-
-          {/* Contact Form */}
-          <div className="lg:col-span-2 bg-white p-8 md:p-12 rounded-3xl shadow-xl border">
-            <h3 className="text-2xl font-bold text-primary mb-8">Send a Message</h3>
-            <form className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Full Name</label>
-                  <input type="text" className="w-full px-4 py-3 border rounded-xl outline-none focus:ring-2 focus:ring-primary" placeholder="John Doe" />
+            {/* Info & Map Column */}
+            <div className="flex flex-col justify-center">
+              <div className="space-y-12 mb-12">
+                <div className="flex gap-6 items-start">
+                  <div className="w-16 h-16 rounded-3xl bg-secondary flex items-center justify-center text-primary flex-shrink-0">
+                    <MapPin size={32} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-display font-bold text-primary mb-1">Our Location</h3>
+                    <p className="text-lg text-gray-500 font-medium leading-relaxed">
+                      {contact.address || '123 Farm Road, Polokwane, 0700'}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Email Address</label>
-                  <input type="email" className="w-full px-4 py-3 border rounded-xl outline-none focus:ring-2 focus:ring-primary" placeholder="john@example.com" />
+
+                <div className="flex gap-6 items-start">
+                  <div className="w-16 h-16 rounded-3xl bg-secondary flex items-center justify-center text-primary flex-shrink-0">
+                    <Phone size={32} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-display font-bold text-primary mb-1">Call Us</h3>
+                    <p className="text-lg text-gray-500 font-bold leading-relaxed">
+                      {contact.phone || '+27 12 345 6789'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-6 items-start">
+                  <div className="w-16 h-16 rounded-3xl bg-secondary flex items-center justify-center text-primary flex-shrink-0">
+                    <Clock size={32} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-display font-bold text-primary mb-1">Operating Hours</h3>
+                    <p className="text-lg text-gray-500 font-medium leading-relaxed whitespace-pre-line">
+                      {contact.operating_hours || 'Mon-Sat: 08:00 - 17:00\nClosed on Sundays'}
+                    </p>
+                  </div>
                 </div>
               </div>
-              
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Subject</label>
-                <select className="w-full px-4 py-3 border rounded-xl outline-none focus:ring-2 focus:ring-primary bg-white">
-                  <option>General Inquiry</option>
-                  <option>Bulk Quote Request</option>
-                  <option>Delivery Question</option>
-                  <option>Feedback</option>
-                </select>
+
+              {/* Map Placeholder */}
+              <div className="aspect-video w-full bg-secondary bg-organic rounded-[60px] relative overflow-hidden flex items-center justify-center border border-primary/5">
+                <div className="text-center relative z-10 p-10">
+                  <MapPin size={48} className="mx-auto text-accent mb-4" />
+                  <p className="text-xl font-display font-bold text-primary mb-2">Live Map Coming Soon</p>
+                  <p className="text-gray-500 text-sm">Polokwane, Limpopo Province</p>
+                </div>
+                <div className="absolute inset-0 bg-primary opacity-[0.03]"></div>
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Message</label>
-                <textarea rows="5" className="w-full px-4 py-3 border rounded-xl outline-none focus:ring-2 focus:ring-primary" placeholder="How can we help you?"></textarea>
-              </div>
-
-              <button className="btn btn-primary w-full py-4 text-lg">
-                Send Message <Send size={20} className="ml-2" />
-              </button>
-            </form>
+              <a 
+                href={`https://wa.me/${contact.whatsapp?.replace(/[^0-9]/g, '')}`}
+                className="btn btn-whatsapp w-full py-5 text-lg mt-12 shadow-xl"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <MessageCircle size={24} className="mr-2" /> Message on WhatsApp
+              </a>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Map Section */}
-      <section className="container mb-20 h-96 bg-gray-200 rounded-3xl overflow-hidden flex items-center justify-center relative">
-        <div className="absolute inset-0 bg-primary opacity-10"></div>
-        <div className="text-center relative z-10">
-          <MapPin size={48} className="mx-auto text-primary mb-4" />
-          <p className="text-xl font-bold text-primary">Google Maps Integration Coming Soon</p>
-          <p className="text-gray-500">{contact.address || 'Polokwane, South Africa'}</p>
+      {/* Safety Section */}
+      <section className="container mb-32">
+        <div className="bg-primary p-12 md:p-24 rounded-[60px] text-secondary text-center">
+          <ShieldCheck size={64} className="mx-auto text-accent mb-8" />
+          <h2 className="text-4xl md:text-6xl font-display font-bold text-white mb-6">Our Quality Promise</h2>
+          <p className="text-xl opacity-80 max-w-3xl mx-auto leading-relaxed mb-12">
+            Every product that leaves our farm is inspected for quality and freshness. We take pride in our bio-security standards and ethical farming practices.
+          </p>
+          <Link to={`/${farm.slug}/order`} className="btn bg-secondary text-primary font-bold px-12 py-5 shadow-2xl">
+            Start Your Fresh Order Today <ArrowRight size={20} className="ml-2" />
+          </Link>
         </div>
       </section>
     </div>

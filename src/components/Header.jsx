@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, ShoppingCart, MessageCircle } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 
 const Header = ({ farm }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,71 +16,83 @@ const Header = ({ farm }) => {
   }, []);
 
   const navLinks = [
-    { name: 'Home', path: `/${farm.slug}` },
+    { name: 'Our Farm', path: `/${farm.slug}` },
     { name: 'Products', path: `/${farm.slug}/products` },
-    { name: 'Services', path: `/${farm.slug}/services` },
-    { name: 'About', path: `/${farm.slug}/about` },
+    { name: 'Farm Services', path: `/${farm.slug}/services` },
     { name: 'Contact', path: `/${farm.slug}/contact` },
   ];
 
-  const brandColor = farm.branding?.primary_color || '#1b4332';
-
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'glass-nav py-3' : 'bg-transparent py-5'}`}>
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? 'glass-nav py-4 shadow-sm' : 'bg-transparent py-8'}`}>
       <div className="container flex items-center justify-between">
-        <Link to={`/${farm.slug}`} className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-primary text-secondary">
-            <span className="font-bold text-xl">N</span>
+        <Link to={`/${farm.slug}`} className="flex items-center gap-4 group">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-primary text-secondary shadow-lg group-hover:rotate-6 transition-transform">
+            <span className="font-display ital font-bold text-2xl">N</span>
           </div>
-          <span className={`font-display font-bold text-xl tracking-tight ${isScrolled ? 'text-primary' : 'text-white'}`}>
-            {farm.name}
-          </span>
+          <div className="flex flex-col">
+            <span className={`font-display font-bold text-2xl tracking-tight leading-none ${isScrolled ? 'text-primary' : 'text-white'}`}>
+              New Dawn
+            </span>
+            <span className={`text-[10px] uppercase tracking-[0.2em] font-bold ${isScrolled ? 'text-accent' : 'text-secondary'}`}>
+              Poultry Farm
+            </span>
+          </div>
         </Link>
 
         {/* Desktop Nav */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden lg:flex items-center gap-10">
           {navLinks.map((link) => (
             <Link
               key={link.path}
               to={link.path}
-              className={`font-semibold transition-colors hover:text-accent ${
+              className={`text-sm uppercase tracking-widest font-bold transition-all hover:text-accent relative group ${
                 location.pathname === link.path 
                   ? 'text-accent' 
                   : (isScrolled ? 'text-primary' : 'text-white')
               }`}
             >
               {link.name}
+              <span className={`absolute -bottom-2 left-0 w-0 h-0.5 bg-accent transition-all group-hover:w-full ${location.pathname === link.path ? 'w-full' : ''}`}></span>
             </Link>
           ))}
-          <Link to={`/${farm.slug}/order`} className="btn btn-primary">
+          <Link to={`/${farm.slug}/order`} className="btn btn-primary ml-4">
             Order Now
           </Link>
         </div>
 
         {/* Mobile Toggle */}
-        <button className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
-          {isOpen ? <X size={28} /> : <Menu size={28} className={isScrolled ? 'text-primary' : 'text-white'} />}
+        <button className="lg:hidden p-2 rounded-xl bg-primary text-secondary" onClick={() => setIsOpen(!isOpen)}>
+          {isOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
       {/* Mobile Menu */}
-      {isOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-white border-t p-5 flex flex-col gap-4 shadow-xl">
+      <div className={`lg:hidden fixed inset-0 bg-primary z-[60] transition-transform duration-500 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="flex justify-end p-8">
+          <button className="p-2 text-secondary" onClick={() => setIsOpen(false)}>
+            <X size={32} />
+          </button>
+        </div>
+        <div className="flex flex-col items-center gap-8 mt-12">
           {navLinks.map((link) => (
             <Link
               key={link.path}
               to={link.path}
               onClick={() => setIsOpen(false)}
-              className="text-lg font-semibold text-primary"
+              className="text-3xl font-display font-bold text-secondary hover:text-accent transition-colors"
             >
               {link.name}
             </Link>
           ))}
-          <Link to={`/${farm.slug}/order`} onClick={() => setIsOpen(false)} className="btn btn-primary w-full">
+          <Link 
+            to={`/${farm.slug}/order`} 
+            onClick={() => setIsOpen(false)} 
+            className="btn bg-secondary text-primary mt-8 px-12 py-5 text-xl"
+          >
             Order Now
           </Link>
         </div>
-      )}
+      </div>
     </nav>
   );
 };
