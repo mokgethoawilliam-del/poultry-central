@@ -1,0 +1,34 @@
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("Missing Supabase configuration. Check your .env file.")
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+// Helper to get farm by slug
+export const getFarmBySlug = async (slug) => {
+  const { data, error } = await supabase
+    .from('farms')
+    .select('*')
+    .eq('slug', slug)
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+// Helper to get products for a farm
+export const getFarmProducts = async (farmId) => {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('farm_id', farmId)
+    .eq('is_active', true)
+  
+  if (error) throw error
+  return data
+}
