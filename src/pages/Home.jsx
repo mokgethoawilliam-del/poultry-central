@@ -78,14 +78,18 @@ export default function NewDawnPoultryLanding() {
       <nav className="bg-white shadow-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-green-700 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-inner">
-              N
-            </div>
+            {farm?.logo_url ? (
+              <img src={farm.logo_url} alt={farmName} className="h-10 w-auto object-contain" />
+            ) : (
+              <div className="w-10 h-10 bg-green-700 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-inner">
+                {farmName.charAt(0)}
+              </div>
+            )}
             <div>
               <p className="text-xs text-green-700 font-bold uppercase tracking-widest leading-none mb-1">
                 {farmName}
               </p>
-              <p className="text-[10px] text-gray-400 font-medium">Fresh poultry in Polokwane</p>
+              <p className="text-[10px] text-gray-400 font-medium">{farm?.site_title || "Fresh poultry in Polokwane"}</p>
             </div>
           </div>
 
@@ -141,14 +145,23 @@ export default function NewDawnPoultryLanding() {
         <div className="max-w-6xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center relative z-10">
           <div>
             <p className="text-green-700 font-bold uppercase tracking-widest text-sm mb-4 bg-green-50 inline-block px-3 py-1 rounded-md">
-              Fresh poultry in Polokwane
+               {farm?.site_title || "Fresh poultry in Polokwane"}
             </p>
             <h1 className="text-5xl md:text-7xl font-black text-gray-900 leading-[1.1] mb-8 tracking-tight">
-              Farm.
-              <br />
-              <span className="text-gray-900">Delivered</span>
-              <br />
-              <span className="text-green-700">to You.</span>
+               {farm?.branding?.hero_headline?.split('.').map((part, idx) => (
+                 <React.Fragment key={idx}>
+                    <span className={idx === 2 ? "text-green-700" : "text-gray-900"}>{part}</span>
+                    <br />
+                 </React.Fragment>
+               )) || (
+                 <>
+                   Farm.
+                   <br />
+                   <span>Delivered</span>
+                   <br />
+                   <span className="text-green-700">to You.</span>
+                 </>
+               )}
             </h1>
             <p className="text-gray-600 text-lg md:text-xl max-w-xl mb-10 leading-relaxed font-medium">
               We supply fresh, farm-raised chickens and eggs daily across Polokwane. From our gates straight to your kitchen.
@@ -175,8 +188,8 @@ export default function NewDawnPoultryLanding() {
             
             <div className="rounded-[40px] overflow-hidden shadow-2xl h-[550px] relative">
               <img
-                src="https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?auto=format&fit=crop&w=1200&q=80"
-                alt="Poultry Farm"
+                src={farm?.hero_image_url || "https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?auto=format&fit=crop&w=1200&q=80"}
+                alt={farm?.name}
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
@@ -249,7 +262,11 @@ export default function NewDawnPoultryLanding() {
           <div className="relative">
             <div className="absolute -top-10 -left-10 w-40 h-40 bg-green-100 rounded-full blur-3xl opacity-50"></div>
             <div className="rounded-[40px] overflow-hidden shadow-2xl h-[500px]">
-              <img src="https://images.unsplash.com/photo-1516467508483-a7212febe31a?auto=format&fit=crop&w=1200&q=80" alt="Chicks" className="w-full h-full object-cover" />
+              <img 
+                src={farm?.about_image_url || "https://images.unsplash.com/photo-1516467508483-a7212febe31a?auto=format&fit=crop&w=1200&q=80"} 
+                alt="Our Farm" 
+                className="w-full h-full object-cover" 
+              />
             </div>
             <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-green-700/10 rounded-full"></div>
           </div>

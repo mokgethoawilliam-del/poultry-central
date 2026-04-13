@@ -129,7 +129,10 @@ const Dashboard = () => {
         branding: farmData.branding,
         contact_info: farmData.contact_info,
         location: farmData.location,
-        why_content: farmData.why_content
+        why_content: farmData.why_content,
+        logo_url: farmData.logo_url,
+        hero_image_url: farmData.hero_image_url,
+        about_image_url: farmData.about_image_url
       }).eq('id', farmData.id);
       if (error) throw error;
       setSaveStatus('Saved Successfully');
@@ -252,13 +255,32 @@ const Dashboard = () => {
             Manage poultry orders, stock, customers, and site content in one place.
           </div>
         </div>
+
+        <div style={styles.profileSection}>
+           <div style={styles.profileInfo}>
+              <div style={styles.profileAvatar}>{farmData?.name?.charAt(0) || 'U'}</div>
+              <div>
+                 <div style={styles.profileName}>{farmData?.name || 'User'}</div>
+                 <div style={styles.profileRoll}>Owner</div>
+              </div>
+           </div>
+           <button 
+             onClick={async () => {
+                await supabase.auth.signOut();
+                navigate('/admin/login');
+             }} 
+             style={styles.logoutBtn}
+           >
+              <LogOut size={16} /> Logout
+           </button>
+        </div>
       </aside>
 
       <main style={styles.main}>
         <div style={styles.topbar}>
           <div>
             <div style={styles.kicker}>Farm Operations Dashboard</div>
-            <h1 style={styles.pageTitle}>{activeTab}</h1>
+            <h1 style={styles.pageTitle}>{!farmData ? "Onboarding" : activeTab}</h1>
           </div>
 
           <div style={styles.topbarActions}>
@@ -274,8 +296,54 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {activeTab === 'Overview' && (
+        {!farmData ? (
+          <section style={styles.panel}>
+            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+              <Layout size={48} style={{ color: '#1d4d35', marginBottom: '20px' }} />
+              <h2 style={{ fontSize: '24px', fontWeight: 900, marginBottom: '10px' }}>Welcome! Let's set up your Farm.</h2>
+              <p style={{ ...styles.rowSub, maxWidth: '400px', margin: '0 auto 30px' }}>
+                You're logged in, but you haven't linked or created a farm site yet. 
+                Enter a name for your shop to get started.
+              </p>
+              
+              <div style={{ maxWidth: '400px', margin: '0 auto', display: 'flex', gap: '10px' }}>
+                 <input 
+                   placeholder="Farm Name (e.g. The New Dawn)" 
+                   style={styles.input} 
+                   id="newFarmName"
+                 />
+                 <button 
+                   style={styles.primaryBtn}
+                   onClick={async () => {
+                      const name = document.getElementById('newFarmName').value;
+                      if (!name) return;
+                      const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+                      
+                      const { data: { user } } = await supabase.auth.getUser();
+                      
+                      const { data, error } = await supabase.from('farms').insert({
+                        name,
+                        slug,
+                        owner_id: user.id,
+                        branding: {
+                          primary_color: "#1d4d35",
+                          secondary_color: "#fcfaf5",
+                          accent_color: "#8b6b2f",
+                          hero_headline: "Fresh Poultry. Trusted Farm. Delivered to You."
+                        }
+                      }).select().single();
+                      
+                      if (data) setFarmData(data);
+                   }}
+                 >
+                   Create My Farm
+                 </button>
+              </div>
+            </div>
+          </section>
+        ) : (
           <>
+            {activeTab === 'Overview' && (
             <div style={styles.statsGrid}>
               <div style={styles.statCard}>
                 <div style={styles.statLabel}>Today's Orders</div>
@@ -516,13 +584,25 @@ const Dashboard = () => {
             <form onSubmit={handleUpdateFarm} style={styles.formGrid}>
                <div style={styles.formRow}>
                   <div style={styles.formGroup}>
-                    <label style={styles.label}>Farm Name</label>
+                    <label style={styles.label}>Farm Name / Site Title</label>
                     <input 
                       style={styles.input}
                       value={farmData?.name || ''} 
                       onChange={(e) => setFarmData({...farmData, name: e.target.value})}
                     />
                   </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Logo URL</label>
+                    <input 
+                      style={styles.input}
+                      placeholder="https://..."
+                      value={farmData?.logo_url || ''} 
+                      onChange={(e) => setFarmData({...farmData, logo_url: e.target.value})}
+                    />
+                  </div>
+               </div>
+
+               <div style={styles.formRow}>
                   <div style={styles.formGroup}>
                     <label style={styles.label}>Hero Headline</label>
                     <input 
@@ -531,15 +611,35 @@ const Dashboard = () => {
                       onChange={(e) => setFarmData({...farmData, branding: {...farmData.branding, hero_headline: e.target.value}})}
                     />
                   </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Hero Image URL</label>
+                    <input 
+                      style={styles.input}
+                      placeholder="https://..."
+                      value={farmData?.hero_image_url || ''} 
+                      onChange={(e) => setFarmData({...farmData, hero_image_url: e.target.value})}
+                    />
+                  </div>
                </div>
 
-               <div style={styles.formGroup}>
-                  <label style={styles.label}>Our Story</label>
-                  <textarea 
-                    style={{ ...styles.input, height: '120px', resize: 'none' }}
-                    value={farmData?.about_story || ''} 
-                    onChange={(e) => setFarmData({...farmData, about_story: e.target.value})}
-                  />
+               <div style={styles.formRow}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Our Story / About</label>
+                    <textarea 
+                      style={{ ...styles.input, height: '120px', resize: 'none' }}
+                      value={farmData?.about_story || ''} 
+                      onChange={(e) => setFarmData({...farmData, about_story: e.target.value})}
+                    />
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>About Image URL</label>
+                    <input 
+                      style={styles.input}
+                      placeholder="https://..."
+                      value={farmData?.about_image_url || ''} 
+                      onChange={(e) => setFarmData({...farmData, about_image_url: e.target.value})}
+                    />
+                  </div>
                </div>
 
                <div style={styles.formRow}>
@@ -1126,6 +1226,57 @@ const styles = {
     outline: 'none',
     fontSize: '14px',
     fontFamily: 'inherit',
+  },
+  profileSection: {
+    marginTop: 'auto',
+    padding: '20px',
+    borderTop: '1px solid #e5ddd0',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '15px',
+  },
+  profileInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  profileAvatar: {
+    width: '36px',
+    height: '36px',
+    borderRadius: '12px',
+    background: '#1d4d35',
+    color: '#fff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: 900,
+    fontSize: '14px',
+  },
+  profileName: {
+    fontSize: '13px',
+    fontWeight: 800,
+    color: '#183126',
+  },
+  profileRoll: {
+    fontSize: '11px',
+    color: '#66756d',
+    fontWeight: 600,
+  },
+  logoutBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    width: '100%',
+    padding: '10px',
+    borderRadius: '12px',
+    border: '1px solid #d8d0c1',
+    background: '#fff',
+    color: '#183126',
+    fontSize: '12px',
+    fontWeight: 800,
+    cursor: 'pointer',
+    transition: 'all 0.2s',
   }
 };
 
