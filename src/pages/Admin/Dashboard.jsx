@@ -144,7 +144,8 @@ const Dashboard = () => {
         logo_url: farmData.logo_url,
         hero_image_url: farmData.hero_image_url,
         about_image_url: farmData.about_image_url,
-        primary_color: farmData.primary_color
+        primary_color: farmData.primary_color,
+        business_config: farmData.business_config
       }).eq('id', farmData.id);
       if (error) throw error;
       setSaveStatus('Saved Successfully');
@@ -574,6 +575,21 @@ const Dashboard = () => {
                 </div>
               </section>
             </div>
+             <div style={{ ...styles.panel, marginTop: '20px' }}>
+                <div style={styles.panelHead}>
+                   <h3 style={styles.panelTitle}>Monthly Sales Performance</h3>
+                </div>
+                <div style={{ height: '120px', display: 'flex', alignItems: 'flex-end', gap: '8px', padding: '20px 0' }}>
+                   {[30, 45, 25, 60, 75, 50, 90, 65, 80, 55, 70, 85].map((h, i) => (
+                      <div key={i} style={{ flex: 1, background: i === 11 ? '#d5b66f' : '#1d4d35', height: `${h}%`, borderRadius: '4px', opacity: 0.8 }} />
+                   ))}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
+                   <span style={styles.rowSub}>Jan</span>
+                   <span style={styles.rowSub}>Jun</span>
+                   <span style={styles.rowSub}>Dec</span>
+                </div>
+             </div>
             </>
           )}
           </>
@@ -997,15 +1013,26 @@ const Dashboard = () => {
                        <label style={styles.label}>Official Business Name</label>
                        <input 
                          style={styles.input} 
-                         value={farmData?.name || ''} 
+                         value={farmData?.business_config?.official_name || ''} 
+                         onChange={(e) => setFarmData({
+                           ...farmData, 
+                           business_config: { ...farmData.business_config, official_name: e.target.value }
+                         })}
                          placeholder="Legal Farm Name"
                        />
                     </div>
                     <div style={styles.formGroup}>
                        <label style={styles.label}>Tax / VAT Treatment</label>
-                       <select style={styles.select}>
-                          <option>Non-VAT Registered</option>
-                          <option>VAT Registered (15%)</option>
+                       <select 
+                         style={styles.select}
+                         value={farmData?.business_config?.tax_enabled ? 'vat' : 'none'}
+                         onChange={(e) => setFarmData({
+                           ...farmData, 
+                           business_config: { ...farmData.business_config, tax_enabled: e.target.value === 'vat' }
+                         })}
+                       >
+                          <option value="none">Non-VAT Registered</option>
+                          <option value="vat">VAT Registered (15%)</option>
                        </select>
                     </div>
                  </div>
@@ -1015,24 +1042,68 @@ const Dashboard = () => {
                        <label style={styles.label}>Order Notifications</label>
                        <div style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
                           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-                             <input type="checkbox" defaultChecked /> Email Alerts
+                             <input 
+                               type="checkbox" 
+                               checked={farmData?.business_config?.notifications?.email ?? true} 
+                               onChange={(e) => setFarmData({
+                                 ...farmData,
+                                 business_config: {
+                                   ...farmData.business_config,
+                                   notifications: { ...farmData.business_config.notifications, email: e.target.checked }
+                                 }
+                               })}
+                             /> Email Alerts
                           </label>
                           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-                             <input type="checkbox" defaultChecked /> WhatsApp Alerts
+                             <input 
+                               type="checkbox" 
+                               checked={farmData?.business_config?.notifications?.whatsapp ?? true} 
+                               onChange={(e) => setFarmData({
+                                 ...farmData,
+                                 business_config: {
+                                   ...farmData.business_config,
+                                   notifications: { ...farmData.business_config.notifications, whatsapp: e.target.checked }
+                                 }
+                               })}
+                             /> WhatsApp Alerts
                           </label>
                        </div>
                     </div>
                     <div style={styles.formGroup}>
                        <label style={styles.label}>Shop Visibility</label>
                        <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                          <button style={{ ...styles.tinyBtn, background: '#1d4d35', color: '#fff' }}>Open</button>
-                          <button style={styles.tinyBtn}>Paused / Vacation</button>
+                          <button 
+                            style={{ 
+                              ...styles.tinyBtn, 
+                              background: farmData?.business_config?.shop_status === 'open' ? '#1d4d35' : '#fff',
+                              color: farmData?.business_config?.shop_status === 'open' ? '#fff' : '#183126'
+                            }}
+                            onClick={() => setFarmData({
+                              ...farmData,
+                              business_config: { ...farmData.business_config, shop_status: 'open' }
+                            })}
+                          >
+                            Open
+                          </button>
+                          <button 
+                            style={{ 
+                              ...styles.tinyBtn,
+                              background: farmData?.business_config?.shop_status === 'closed' ? '#dc2626' : '#fff',
+                              color: farmData?.business_config?.shop_status === 'closed' ? '#fff' : '#183126'
+                            }}
+                            onClick={() => setFarmData({
+                              ...farmData,
+                              business_config: { ...farmData.business_config, shop_status: 'closed' }
+                            })}
+                          >
+                            Paused / Vacation
+                          </button>
                        </div>
                     </div>
                  </div>
 
                  <div style={{ marginTop: '20px' }}>
-                    <button style={styles.primaryBtn} onClick={() => alert("Settings updated.")}>Update Business Settings</button>
+                    <button style={styles.primaryBtn} onClick={handleUpdateFarm}>Save Business Settings</button>
                  </div>
               </div>
             </section>
@@ -1447,20 +1518,22 @@ const styles = {
   },
   brandingFooter: {
     marginTop: 'auto',
-    padding: '24px 14px',
-    borderTop: '1px solid rgba(255,255,255,0.08)',
+    padding: '30px 14px',
+    borderTop: '1px solid rgba(255,255,255,0.05)',
   },
   brandingMain: {
-    fontSize: '11px',
+    fontSize: '12px',
     fontWeight: 900,
-    color: '#fff',
-    letterSpacing: '0.1em',
-    marginBottom: '4px',
+    color: '#d5b66f',
+    letterSpacing: '0.15em',
+    marginBottom: '6px',
+    textShadow: '0 2px 4px rgba(0,0,0,0.2)',
   },
   brandingSubText: {
     fontSize: '9px',
     color: '#b7c9c0',
-    fontWeight: 600,
+    fontWeight: 700,
+    opacity: 0.8,
   },
   topProfileBtn: {
     display: 'flex',
