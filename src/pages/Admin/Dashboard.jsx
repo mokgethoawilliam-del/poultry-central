@@ -53,6 +53,7 @@ const Dashboard = () => {
   const [userEmail, setUserEmail] = useState('');
   const [deleteConfirmation, setDeleteConfirmation] = useState(false);
   const [liveTime, setLiveTime] = useState(new Date().toLocaleTimeString());
+  const [showBillingModal, setShowBillingModal] = useState(false);
 
   // ─── Security Vault State ─────────────────────────────────
   const [showVault, setShowVault] = useState(false);
@@ -532,6 +533,51 @@ const Dashboard = () => {
         </div>
       )}
 
+      {/* ── BILLING MODAL ────────────────────────────────────── */}
+      {showBillingModal && (
+        <div style={styles.modalOverlay} onClick={() => setShowBillingModal(false)}>
+          <div style={{ ...styles.modalContent, maxWidth: '800px' }} onClick={e => e.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <h3 style={styles.panelTitle}>SaaS Billing & Subscriptions</h3>
+              <button onClick={() => setShowBillingModal(false)} style={styles.closeBtn}>×</button>
+            </div>
+            <div style={styles.modalBody}>
+              <div style={styles.twoCol}>
+                <div style={{ ...styles.panel, background: '#fcfaf5', border: '1px dashed #d8d0c1' }}>
+                  <h4 style={{ ...styles.rowStrong, fontSize: '18px', marginBottom: '15px' }}>Current Plan</h4>
+                  <div style={{ fontSize: '32px', fontWeight: 900, color: '#1d4d35' }}>R400 <span style={{ fontSize: '14px', color: '#66756d' }}>/ month</span></div>
+                  <p style={{ ...styles.rowSub, marginTop: '20px' }}>Includes full access to the Poultry Back Office, Site Editor, Live Order Board, and Stock Management tools.</p>
+                  <div style={{ marginTop: '30px' }}>
+                    <button style={{ ...styles.primaryBtnLarge, width: '100%' }}>
+                      <CreditCard size={18} style={{ marginRight: '10px' }} /> Update Payment Method
+                    </button>
+                  </div>
+                </div>
+                <div style={styles.simpleList}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                    <h4 style={styles.rowStrong}>Payment History</h4>
+                    <span style={{ ...styles.pill, ...styles.pillGreen }}>Active</span>
+                  </div>
+                  {[{ label: 'Monthly Subscription', sub: 'April 2024', amount: 'R400', status: 'Pending', color: styles.pillRed }].map((item, i) => (
+                    <div key={i} style={styles.simpleRow}>
+                      <div>
+                        <div style={styles.rowStrong}>{item.label}</div>
+                        <div style={styles.rowSub}>{item.sub}</div>
+                      </div>
+                      <div style={styles.rowRight}>
+                        <div style={styles.rowStrong}>{item.amount}</div>
+                        <div style={{ ...styles.pill, ...item.color }}>{item.status}</div>
+                      </div>
+                    </div>
+                  ))}
+                  <p style={{ ...styles.rowSub, marginTop: '20px', fontSize: '12px' }}>Next billing date: May 1, 2024</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── SIDEBAR ──────────────────────────────────────────── */}
       <aside style={styles.sidebar}>
         <div style={styles.brandWrap}>
@@ -555,7 +601,6 @@ const Dashboard = () => {
             { id: 'Customers', icon: <Users size={18} />, label: 'Customers' },
             { id: 'Site Editor', icon: <Layout size={18} />, label: 'Site Editor' },
             { id: 'Testimonials', icon: <MessageSquare size={18} />, label: 'Testimonials' },
-            { id: 'Billing', icon: <CreditCard size={18} />, label: 'Billing' },
             { id: 'Settings', icon: <Settings size={18} />, label: 'Settings' },
           ].map(item => (
             <button key={item.id} style={{ ...styles.navBtn, ...(activeTab === item.id && styles.navBtnActive) }} onClick={() => setActiveTab(item.id)}>
@@ -603,6 +648,9 @@ const Dashboard = () => {
                   </button>
                   <button style={{ ...styles.dropdownItem, color: '#1d4d35', fontWeight: 900 }} onClick={() => { setShowVault(true); setShowProfileMenu(false); }}>
                     <Lock size={14} /> 🔒 Security Vault
+                  </button>
+                  <button style={{ ...styles.dropdownItem, color: '#1d4d35', fontWeight: 900 }} onClick={() => { setShowBillingModal(true); setShowProfileMenu(false); }}>
+                    <CreditCard size={14} /> 💳 Billing & Subscription
                   </button>
                   <button style={styles.dropdownItem} onClick={async () => { await supabase.auth.signOut(); navigate('/admin/login'); }}>
                     <LogOut size={14} /> Logout
@@ -1078,51 +1126,7 @@ const Dashboard = () => {
           </section>
         )}
 
-        {/* ── BILLING ───────────────────────────────────────── */}
-        {activeTab === 'Billing' && (
-          <section style={styles.panel}>
-            <div style={styles.panelHead}>
-              <h3 style={styles.panelTitle}>SaaS Billing & Subscriptions</h3>
-              <span style={{ ...styles.pill, ...(farmData?.subscription_status === 'active' ? styles.pillGreen : styles.pillRed) }}>
-                {farmData?.subscription_status || 'Trial'}
-              </span>
-            </div>
-            <div style={styles.twoCol}>
-              <div style={{ ...styles.panel, background: '#fcfaf5', border: '1px dashed #d8d0c1' }}>
-                <h4 style={{ ...styles.rowStrong, fontSize: '18px', marginBottom: '15px' }}>Current Plan</h4>
-                <div style={{ fontSize: '32px', fontWeight: 900, color: '#1d4d35' }}>R400 <span style={{ fontSize: '14px', color: '#66756d' }}>/ month</span></div>
-                <p style={{ ...styles.rowSub, marginTop: '20px' }}>Includes full access to the Poultry Back Office, Site Editor, Live Order Board, and Stock Management tools.</p>
-                <div style={{ marginTop: '30px' }}>
-                  {!farmData?.setup_fee_paid && (
-                    <div style={{ background: '#fff1cc', padding: '15px', borderRadius: '15px', marginBottom: '15px', border: '1px solid #e5c07b' }}>
-                      <div style={{ fontWeight: 800, fontSize: '13px', color: '#8b6500' }}>Setup Fee Pending</div>
-                      <div style={{ fontSize: '24px', fontWeight: 900, color: '#183126' }}>R2,500.00</div>
-                    </div>
-                  )}
-                  <button style={{ ...styles.primaryBtnLarge, width: '100%' }}>
-                    <CreditCard size={18} style={{ marginRight: '10px' }} /> Update Payment Method
-                  </button>
-                </div>
-              </div>
-              <div style={styles.simpleList}>
-                <h4 style={styles.rowStrong}>Payment History</h4>
-                {[{ label: 'Setup Fee', sub: 'One-time activation', amount: 'R2,500', status: 'Unpaid', color: styles.pillRed },
-                  { label: 'Monthly Subscription', sub: 'April 2024', amount: 'R400', status: 'Pending', color: styles.pillRed }].map((item, i) => (
-                  <div key={i} style={styles.simpleRow}>
-                    <div>
-                      <div style={styles.rowStrong}>{item.label}</div>
-                      <div style={styles.rowSub}>{item.sub}</div>
-                    </div>
-                    <div style={styles.rowRight}>
-                      <div style={styles.rowStrong}>{item.amount}</div>
-                      <div style={{ ...styles.pill, ...item.color }}>{item.status}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
+        {/* ── BILLING (Removed from sidebar, now in profile modal) ── */}
 
         {/* ── SETTINGS ──────────────────────────────────────── */}
         {activeTab === 'Settings' && (

@@ -9,23 +9,23 @@ VALUES ('site-assets', 'site-assets', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- 2. Storage Policies for site-assets
--- Allow public access to all assets
-CREATE POLICY "Public Read Access"
-ON storage.objects FOR SELECT
-USING ( bucket_id = 'site-assets' );
+DO $$ 
+BEGIN 
+    -- Public Read Access
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Public Read Access' AND tablename = 'objects' AND schemaname = 'storage') THEN
+        CREATE POLICY "Public Read Access" ON storage.objects FOR SELECT USING ( bucket_id = 'site-assets' );
+    END IF;
 
--- Allow authenticated users to upload their own assets
-CREATE POLICY "Shop Owners Can Upload"
-ON storage.objects FOR INSERT
-WITH CHECK (
-  bucket_id = 'site-assets' AND
-  auth.role() = 'authenticated'
-);
+    -- Shop Owners Can Upload
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Shop Owners Can Upload' AND tablename = 'objects' AND schemaname = 'storage') THEN
+        CREATE POLICY "Shop Owners Can Upload" ON storage.objects FOR INSERT WITH CHECK ( bucket_id = 'site-assets' AND auth.role() = 'authenticated' );
+    END IF;
 
--- Allow owners to delete/update their own assets
-CREATE POLICY "Shop Owners Can Modify"
-ON storage.objects FOR ALL
-USING ( bucket_id = 'site-assets' AND auth.uid()::text = (storage.foldername(name))[1] );
+    -- Shop Owners Can Modify
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Shop Owners Can Modify' AND tablename = 'objects' AND schemaname = 'storage') THEN
+        CREATE POLICY "Shop Owners Can Modify" ON storage.objects FOR ALL USING ( bucket_id = 'site-assets' AND auth.uid()::text = (storage.foldername(name))[1] );
+    END IF;
+END $$;
 
 
 -- 3. Update farms table for dynamic color/branding
