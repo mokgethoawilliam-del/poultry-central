@@ -28,7 +28,7 @@ BEGIN
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='farms' AND column_name='monthly_rate') THEN 
-        ALTER TABLE public.farms ADD COLUMN monthly_rate NUMERIC(10, 2) DEFAULT 400.00; 
+        ALTER TABLE public.farms ADD COLUMN monthly_rate NUMERIC(10, 2) DEFAULT 399.00; 
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='farms' AND column_name='setup_fee_rate') THEN 

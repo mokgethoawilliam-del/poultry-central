@@ -545,7 +545,7 @@ const Dashboard = () => {
               <div style={styles.twoCol}>
                 <div style={{ ...styles.panel, background: '#fcfaf5', border: '1px dashed #d8d0c1' }}>
                   <h4 style={{ ...styles.rowStrong, fontSize: '18px', marginBottom: '15px' }}>Current Plan</h4>
-                  <div style={{ fontSize: '32px', fontWeight: 900, color: '#1d4d35' }}>R400 <span style={{ fontSize: '14px', color: '#66756d' }}>/ month</span></div>
+                  <div style={{ fontSize: '32px', fontWeight: 900, color: '#1d4d35' }}>R399 <span style={{ fontSize: '14px', color: '#66756d' }}>/ month</span></div>
                   <p style={{ ...styles.rowSub, marginTop: '20px' }}>Includes full access to the Poultry Back Office, Site Editor, Live Order Board, and Stock Management tools.</p>
                   <div style={{ marginTop: '30px' }}>
                     <button style={{ ...styles.primaryBtnLarge, width: '100%' }}>
@@ -558,7 +558,7 @@ const Dashboard = () => {
                     <h4 style={styles.rowStrong}>Payment History</h4>
                     <span style={{ ...styles.pill, ...styles.pillGreen }}>Active</span>
                   </div>
-                  {[{ label: 'Monthly Subscription', sub: 'April 2024', amount: 'R400', status: 'Pending', color: styles.pillRed }].map((item, i) => (
+                  {[{ label: 'Monthly Subscription', sub: 'April 2024', amount: 'R399', status: 'Pending', color: styles.pillRed }].map((item, i) => (
                     <div key={i} style={styles.simpleRow}>
                       <div>
                         <div style={styles.rowStrong}>{item.label}</div>
