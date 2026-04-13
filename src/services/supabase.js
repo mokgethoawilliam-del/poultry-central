@@ -72,3 +72,48 @@ export const getOwnedFarm = async () => {
     if (error) return null;
     return data;
 }
+
+// STORAGE HELPERS
+// Upload image to site-assets bucket
+export const uploadShopAsset = async (file, farmId, type) => {
+    try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${farmId}/${type}_${Math.random()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+            .from('site-assets')
+            .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data } = supabase.storage
+            .from('site-assets')
+            .getPublicUrl(filePath);
+
+        return data.publicUrl;
+    } catch (error) {
+        console.error('Error uploading asset:', error);
+        throw error;
+    }
+}
+
+// Delete image from site-assets bucket
+export const deleteOldAsset = async (url) => {
+    try {
+        if (!url) return;
+        // Extract file path from public URL
+        // Example: https://.../storage/v1/object/public/site-assets/farmId/type_random.jpg
+        const pathParts = url.split('site-assets/');
+        if (pathParts.length < 2) return;
+        
+        const filePath = pathParts[1];
+        const { error } = await supabase.storage
+            .from('site-assets')
+            .remove([filePath]);
+
+        if (error) throw error;
+    } catch (error) {
+        console.error('Error deleting old asset:', error);
+    }
+}

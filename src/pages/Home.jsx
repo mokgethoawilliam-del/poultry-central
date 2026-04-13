@@ -13,6 +13,13 @@ export default function NewDawnPoultryLanding() {
   const whatsappNumber = contact.whatsapp?.replace(/[^0-9]/g, "") || "27150040130";
   const farmName = farm?.name || "The New Dawn Poultry Farm";
   const farmSlug = farm?.slug || "new-dawn";
+  const primaryColor = farm?.primary_color || "#1d4d35";
+
+  // Dynamic Styles
+  const primaryBg = { backgroundColor: primaryColor };
+  const primaryText = { color: primaryColor };
+  const primaryBorder = { borderColor: primaryColor };
+  const primaryBgHover = { backgroundColor: primaryColor, opacity: 0.9 };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -97,8 +104,8 @@ export default function NewDawnPoultryLanding() {
             <a href="#home" className="hover:text-green-700 transition-colors">Home</a>
             <Link to={`/${farmSlug}/products`} className="hover:text-green-700 transition-colors">Products</Link>
             <Link to={`/${farmSlug}/services`} className="hover:text-green-700 transition-colors">Farm Services</Link>
-            <a href="#about" className="hover:text-green-700 transition-colors">About</a>
-            <Link to={`/${farmSlug}/contact`} className="hover:text-green-700 transition-colors">Contact</Link>
+            <a href="#about" className="hover:opacity-75 transition-colors" style={primaryText}>About</a>
+            <Link to={`/${farmSlug}/contact`} className="hover:opacity-75 transition-colors" style={primaryText}>Contact</Link>
           </div>
 
           <div className="hidden md:flex items-center gap-3">
@@ -106,7 +113,8 @@ export default function NewDawnPoultryLanding() {
               href={`https://wa.me/${whatsappNumber}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-green-600 text-white px-5 py-2 rounded-full text-xs font-bold hover:bg-green-700 transition shadow-md"
+              className="text-white px-5 py-2 rounded-full text-xs font-bold transition shadow-md"
+              style={primaryBg}
             >
               WhatsApp Us
             </a>
@@ -144,13 +152,13 @@ export default function NewDawnPoultryLanding() {
       <section id="home" className="relative pt-12 pb-20 md:pb-32 overflow-hidden bg-gray-50">
         <div className="max-w-6xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center relative z-10">
           <div>
-            <p className="text-green-700 font-bold uppercase tracking-widest text-sm mb-4 bg-green-50 inline-block px-3 py-1 rounded-md">
+            <p className="font-bold uppercase tracking-widest text-sm mb-4 inline-block px-3 py-1 rounded-md" style={{ ...primaryText, backgroundColor: `${primaryColor}15` }}>
                {farm?.site_title || "Fresh poultry in Polokwane"}
             </p>
             <h1 className="text-5xl md:text-7xl font-black text-gray-900 leading-[1.1] mb-8 tracking-tight">
                {farm?.branding?.hero_headline?.split('.').map((part, idx) => (
                  <React.Fragment key={idx}>
-                    <span className={idx === 2 ? "text-green-700" : "text-gray-900"}>{part}</span>
+                    <span style={idx === 2 ? primaryText : { color: '#111' }}>{part}</span>
                     <br />
                  </React.Fragment>
                )) || (
@@ -159,23 +167,25 @@ export default function NewDawnPoultryLanding() {
                    <br />
                    <span>Delivered</span>
                    <br />
-                   <span className="text-green-700">to You.</span>
+                   <span style={primaryText}>to You.</span>
                  </>
                )}
             </h1>
             <p className="text-gray-600 text-lg md:text-xl max-w-xl mb-10 leading-relaxed font-medium">
-              We supply fresh, farm-raised chickens and eggs daily across Polokwane. From our gates straight to your kitchen.
+               {farm?.branding?.hero_subtitle || "We supply fresh, farm-raised chickens and eggs daily across our region. From our gates straight to your kitchen."}
             </p>
             <div className="flex flex-wrap gap-4 mb-10">
               <Link
                 to={`/${farmSlug}/order`}
-                className="bg-green-700 hover:bg-green-800 text-white font-bold px-10 py-5 rounded-full text-lg transition shadow-xl hover:-translate-y-1 block"
+                className="text-white font-bold px-10 py-5 rounded-full text-lg transition shadow-xl hover:-translate-y-1 block"
+                style={primaryBg}
               >
                 Order Now
               </Link>
               <a
                 href={`https://wa.me/${whatsappNumber}`}
-                className="bg-white border-2 border-green-700 text-green-700 font-bold px-10 py-5 rounded-full text-lg transition shadow-lg hover:bg-green-50 block"
+                className="bg-white border-2 font-bold px-10 py-5 rounded-full text-lg transition shadow-lg hover:bg-gray-50 block"
+                style={{ ...primaryText, ...primaryBorder }}
               >
                 WhatsApp Enquiries
               </a>
@@ -195,8 +205,8 @@ export default function NewDawnPoultryLanding() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
               
               <div className="absolute bottom-10 right-10 bg-white p-6 rounded-3xl shadow-2xl max-w-xs border border-gray-100 animate-fadeInScale">
-                <p className="text-green-700 font-bold text-xs uppercase tracking-widest mb-2">Fresh Quality</p>
-                <p className="text-gray-900 font-bold leading-snug">Locally raised chickens, fresh daily eggs, and specialized services.</p>
+                <p className="font-bold text-xs uppercase tracking-widest mb-2" style={primaryText}>Fresh Quality</p>
+                <p className="text-gray-900 font-bold leading-snug">{farm?.why_content || "Locally raised chickens, fresh daily eggs, and specialized services."}</p>
               </div>
             </div>
           </div>
@@ -271,13 +281,13 @@ export default function NewDawnPoultryLanding() {
             <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-green-700/10 rounded-full"></div>
           </div>
           <div>
-            <p className="text-green-700 font-bold uppercase tracking-widest text-sm mb-6 bg-green-50 inline-block px-3 py-1 rounded-md">Our Story</p>
+            <p className="font-bold uppercase tracking-widest text-sm mb-6 inline-block px-3 py-1 rounded-md" style={{ ...primaryText, backgroundColor: `${primaryColor}15` }}>Our Story</p>
             <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-8 tracking-tight italic leading-tight">Authentic farming, <br/>built on Trust.</h2>
             <p className="text-gray-700 text-lg leading-relaxed mb-6 font-medium">
-               {farm?.about_story || "At The New Dawn Poultry Farm, we believe good food starts with trust, consistency, and proper care. Our goal is to serve Polokwane with quality poultry products that people can rely on for everyday meals, resale, and special events."}
+               {farm?.about_story || "We believe good food starts with trust, consistency, and proper care. Our goal is to serve our community with quality poultry products that people can rely on for everyday meals, resale, and special events."}
             </p>
             <p className="text-gray-600 text-lg leading-relaxed font-medium">
-               We serve families, retailers, and local businesses with the same dedication to freshness and reliability.
+               {farm?.about_headline || "We serve families, retailers, and local businesses with the same dedication to freshness and reliability."}
             </p>
           </div>
         </div>
@@ -312,9 +322,9 @@ export default function NewDawnPoultryLanding() {
       <footer className="bg-gray-50 border-t border-gray-100 py-20">
         <div className="max-w-6xl mx-auto px-4 grid md:grid-cols-12 gap-12">
           <div className="md:col-span-5">
-            <p className="text-green-700 font-black text-2xl tracking-tighter mb-4 italic leading-none">{farmName}</p>
+            <p className="font-black text-2xl tracking-tighter mb-4 italic leading-none" style={primaryText}>{farmName}</p>
             <p className="text-gray-500 text-sm max-w-sm font-medium leading-relaxed">
-               Quality poultry in Polokwane. We serve families, businesses, and community events with freshness and care since 2024.
+               {farm?.footer_desc || `Quality poultry supply. We serve families, businesses, and community events with freshness and care.`}
             </p>
           </div>
           <div className="md:col-span-3">

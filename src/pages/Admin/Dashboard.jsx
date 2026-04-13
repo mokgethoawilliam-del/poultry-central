@@ -18,11 +18,10 @@ import {
   CreditCard,
   Calendar,
   LogOut,
-  ChevronRight,
-  TrendingUp,
-  MapPin,
-  TrendingDown
+  Upload,
+  Droplets
 } from 'lucide-react';
+import { uploadShopAsset, deleteOldAsset } from '../../services/supabase';
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('Overview');
@@ -33,6 +32,7 @@ const Dashboard = () => {
   const [gallery, setGallery] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState('');
+  const [isUploading, setIsUploading] = useState(null); // logo, hero, about
 
   // Stats
   const [stats, setStats] = useState({
@@ -132,7 +132,8 @@ const Dashboard = () => {
         why_content: farmData.why_content,
         logo_url: farmData.logo_url,
         hero_image_url: farmData.hero_image_url,
-        about_image_url: farmData.about_image_url
+        about_image_url: farmData.about_image_url,
+        primary_color: farmData.primary_color
       }).eq('id', farmData.id);
       if (error) throw error;
       setSaveStatus('Saved Successfully');
@@ -141,6 +142,39 @@ const Dashboard = () => {
       console.error("Update error:", err);
       setSaveStatus('Error Saving');
     }
+  };
+
+  const handleFileUpload = async (e, type) => {
+     const file = e.target.files[0];
+     if (!file) return;
+
+     try {
+        setIsUploading(type);
+        const oldUrl = farmData[`${type}_url`] || farmData[type];
+        
+        // 1. Upload new asset
+        const publicUrl = await uploadShopAsset(file, farmData.id, type);
+        
+        // 2. Delete old asset
+        if (oldUrl && oldUrl.includes('supabase.co')) {
+           await deleteOldAsset(oldUrl);
+        }
+
+        // 3. Update local state
+        const updateData = { ...farmData };
+        if (type === 'logo') updateData.logo_url = publicUrl;
+        else if (type === 'hero_image') updateData.hero_image_url = publicUrl;
+        else if (type === 'about_image') updateData.about_image_url = publicUrl;
+        
+        setFarmData(updateData);
+        setSaveStatus('Image Uploaded');
+        setTimeout(() => setSaveStatus(''), 2000);
+     } catch (err) {
+        console.error("Upload failed:", err);
+        setSaveStatus('Upload Failed');
+     } finally {
+        setIsUploading(null);
+     }
   };
 
   const updateOrderStatus = async (id, newStatus) => {
@@ -344,6 +378,7 @@ const Dashboard = () => {
         ) : (
           <>
             {activeTab === 'Overview' && (
+              <>
             <div style={styles.statsGrid}>
               <div style={styles.statCard}>
                 <div style={styles.statLabel}>Today's Orders</div>
@@ -427,6 +462,8 @@ const Dashboard = () => {
                 </div>
               </section>
             </div>
+            </>
+          )}
           </>
         )}
 
@@ -582,27 +619,39 @@ const Dashboard = () => {
             </div>
 
             <form onSubmit={handleUpdateFarm} style={styles.formGrid}>
-               <div style={styles.formRow}>
+                <div style={styles.formRow}>
                   <div style={styles.formGroup}>
                     <label style={styles.label}>Farm Name / Site Title</label>
-                    <input 
-                      style={styles.input}
-                      value={farmData?.name || ''} 
-                      onChange={(e) => setFarmData({...farmData, name: e.target.value})}
-                    />
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <input 
+                        style={{ ...styles.input, flex: 1 }}
+                        value={farmData?.name || ''} 
+                        onChange={(e) => setFarmData({...farmData, name: e.target.value})}
+                      />
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                         <label style={{ ...styles.label, fontSize: '9px' }}>Brand Color</label>
+                         <input 
+                           type="color" 
+                           style={{ width: '40px', height: '36px', border: '1px solid #d8d0c1', borderRadius: '8px', cursor: 'pointer', padding: '2px' }}
+                           value={farmData?.primary_color || '#1d4d35'}
+                           onChange={(e) => setFarmData({...farmData, primary_color: e.target.value})}
+                         />
+                      </div>
+                    </div>
                   </div>
                   <div style={styles.formGroup}>
-                    <label style={styles.label}>Logo URL</label>
-                    <input 
-                      style={styles.input}
-                      placeholder="https://..."
-                      value={farmData?.logo_url || ''} 
-                      onChange={(e) => setFarmData({...farmData, logo_url: e.target.value})}
-                    />
+                    <label style={styles.label}>Farm Logo</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      {farmData?.logo_url && <img src={farmData.logo_url} alt="Logo" style={{ height: '40px', width: '40px', borderRadius: '8px', objectFit: 'contain', border: '1px solid #efe8dc' }} />}
+                      <label style={{ ...styles.primaryBtn, cursor: 'pointer', flex: 1, textAlign: 'center' }}>
+                        {isUploading === 'logo' ? 'Uploading...' : 'Upload New Logo'}
+                        <input type="file" hidden accept="image/*" onChange={(e) => handleFileUpload(e, 'logo')} />
+                      </label>
+                    </div>
                   </div>
-               </div>
+                </div>
 
-               <div style={styles.formRow}>
+                <div style={styles.formRow}>
                   <div style={styles.formGroup}>
                     <label style={styles.label}>Hero Headline</label>
                     <input 
@@ -612,17 +661,18 @@ const Dashboard = () => {
                     />
                   </div>
                   <div style={styles.formGroup}>
-                    <label style={styles.label}>Hero Image URL</label>
-                    <input 
-                      style={styles.input}
-                      placeholder="https://..."
-                      value={farmData?.hero_image_url || ''} 
-                      onChange={(e) => setFarmData({...farmData, hero_image_url: e.target.value})}
-                    />
+                    <label style={styles.label}>Hero Display Image</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      {farmData?.hero_image_url && <img src={farmData.hero_image_url} alt="Hero" style={{ height: '40px', width: '40px', borderRadius: '8px', objectFit: 'cover' }} />}
+                      <label style={{ ...styles.primaryBtn, cursor: 'pointer', flex: 1, textAlign: 'center' }}>
+                        {isUploading === 'hero_image' ? 'Uploading...' : 'Upload Image'}
+                        <input type="file" hidden accept="image/*" onChange={(e) => handleFileUpload(e, 'hero_image')} />
+                      </label>
+                    </div>
                   </div>
-               </div>
+                </div>
 
-               <div style={styles.formRow}>
+                <div style={styles.formRow}>
                   <div style={styles.formGroup}>
                     <label style={styles.label}>Our Story / About</label>
                     <textarea 
@@ -632,17 +682,18 @@ const Dashboard = () => {
                     />
                   </div>
                   <div style={styles.formGroup}>
-                    <label style={styles.label}>About Image URL</label>
-                    <input 
-                      style={styles.input}
-                      placeholder="https://..."
-                      value={farmData?.about_image_url || ''} 
-                      onChange={(e) => setFarmData({...farmData, about_image_url: e.target.value})}
-                    />
+                    <label style={styles.label}>About Section Image</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {farmData?.about_image_url && <img src={farmData.about_image_url} alt="About" style={{ height: '80px', width: '100%', borderRadius: '14px', objectFit: 'cover' }} />}
+                      <label style={{ ...styles.primaryBtn, cursor: 'pointer', textAlign: 'center' }}>
+                        {isUploading === 'about_image' ? 'Uploading...' : 'Upload Photo'}
+                        <input type="file" hidden accept="image/*" onChange={(e) => handleFileUpload(e, 'about_image')} />
+                      </label>
+                    </div>
                   </div>
-               </div>
+                </div>
 
-               <div style={styles.formRow}>
+                <div style={styles.formRow}>
                   <div style={styles.formGroup}>
                     <label style={styles.label}>WhatsApp Number</label>
                     <input 
