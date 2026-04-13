@@ -7,6 +7,8 @@ import Order from './pages/Order';
 import Services from './pages/Services';
 import Contact from './pages/Contact';
 import Dashboard from './pages/Admin/Dashboard';
+import AdminLogin from './pages/Admin/AdminLogin';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Placeholder pages for those not yet fully built
 const Placeholder = ({ title }) => (
@@ -23,8 +25,14 @@ function App() {
         {/* Redirect root to new-dawn */}
         <Route path="/" element={<Navigate to="/new-dawn" replace />} />
 
-        {/* Global Farmer Dashboard Route (Back Office) - always at /admin */}
-        <Route path="/admin" element={<Dashboard />} />
+        {/* Global Farmer Dashboard Route (Back Office) */}
+        <Route path="/admin" element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/admin/login" element={<AdminLogin />} />
 
         {/* Dynamic Farm Routes (Customer Site) */}
         <Route path="/:farmSlug" element={<MainLayout />}>

@@ -44,3 +44,31 @@ export const getFarmTestimonials = async (farmId) => {
   if (error) throw error
   return data
 }
+
+// Helper to get gallery for a farm
+export const getFarmGallery = async (farmId) => {
+  const { data, error } = await supabase
+    .from('site_gallery')
+    .select('*')
+    .eq('farm_id', farmId)
+    .eq('is_active', true)
+    .order('order_index')
+  
+  if (error) throw error
+  return data
+}
+
+// Helper for Admin: Get farm owned by current user
+export const getOwnedFarm = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+        .from('farms')
+        .select('*')
+        .eq('owner_id', user.id)
+        .single();
+    
+    if (error) return null;
+    return data;
+}

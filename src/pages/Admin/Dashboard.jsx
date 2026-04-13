@@ -30,6 +30,7 @@ const Dashboard = () => {
   const [orders, setOrders] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
+  const [gallery, setGallery] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState('');
 
@@ -44,8 +45,21 @@ const Dashboard = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      // 1. Fetch farm
-      const { data: farm } = await supabase.from('farms').select('*').single();
+      // 1. Fetch farm owned by user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return navigate('/admin/login');
+
+      const { data: farm, error: farmErr } = await supabase
+        .from('farms')
+        .select('*')
+        .eq('owner_id', user.id)
+        .single();
+      
+      if (farmErr) {
+        console.error("Farm fetch error:", farmErr);
+        // If no farm found but is authenticated, maybe they need to create one
+        return;
+      }
       setFarmData(farm);
 
       // 2. Fetch testimonials
@@ -71,6 +85,14 @@ const Dashboard = () => {
         .eq('farm_id', farm.id)
         .order('created_at', { ascending: false });
       setOrders(orderData || []);
+
+      // 5. Fetch Gallery
+      const { data: galleryData } = await supabase
+        .from('site_gallery')
+        .select('*')
+        .eq('farm_id', farm.id)
+        .order('order_index');
+      setGallery(galleryData || []);
 
       // 5. Calculate Stats
       const today = new Date().toISOString().split('T')[0];
@@ -209,6 +231,12 @@ const Dashboard = () => {
             onClick={() => setActiveTab('Testimonials')}
           >
             <MessageSquare size={18} style={{ marginRight: '10px' }} /> Testimonials
+          </button>
+          <button 
+            style={{ ...styles.navBtn, ...(activeTab === 'Billing' && styles.navBtnActive) }}
+            onClick={() => setActiveTab('Billing')}
+          >
+            <CreditCard size={18} style={{ marginRight: '10px' }} /> Billing
           </button>
           <button 
             style={{ ...styles.navBtn, ...(activeTab === 'Settings' && styles.navBtnActive) }}
@@ -407,7 +435,27 @@ const Dashboard = () => {
           <section style={styles.panel}>
             <div style={styles.panelHead}>
               <h3 style={styles.panelTitle}>Inventory Management</h3>
-              <button style={styles.primaryBtn}>+ Add Product</button>
+              <button 
+                style={styles.primaryBtn}
+                onClick={async () => {
+                  const name = window.prompt("Product Name:");
+                  if (!name) return;
+                  const price = window.prompt("Price (R):");
+                  const category = window.prompt("Category (Live, Eggs, Meat):");
+                  
+                  const { data, error } = await supabase.from('products').insert({
+                    farm_id: farmData.id,
+                    name,
+                    price: parseFloat(price),
+                    category,
+                    stock_status: 'in_stock'
+                  }).select().single();
+                  
+                  if (data) setInventory([...inventory, data]);
+                }}
+              >
+                + Add Product
+              </button>
             </div>
 
             <div style={styles.inventoryGrid}>
@@ -513,7 +561,44 @@ const Dashboard = () => {
                   </div>
                </div>
 
-               <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+               <div style={{ marginTop: '40px', borderTop: '1px solid #e5ddd0', pt: '30px' }}>
+                  <h4 style={{ ...styles.panelTitle, marginBottom: '10px' }}>Site Gallery</h4>
+                  <p style={styles.rowSub}>Showcase your farm with beautiful photos on the landing page.</p>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '15px', marginTop: '20px' }}>
+                    {gallery.map(img => (
+                      <div key={img.id} style={{ position: 'relative', borderRadius: '14px', overflow: 'hidden', height: '120px', border: '1px solid #e5ddd0' }}>
+                        <img src={img.image_url} alt="" style={{ width: '100%', height: '100%', objectCover: 'cover' }} />
+                        <button 
+                          onClick={async () => {
+                            await supabase.from('site_gallery').delete().eq('id', img.id);
+                            setGallery(gallery.filter(g => g.id !== img.id));
+                          }}
+                          style={{ position: 'absolute', top: '5px', right: '5px', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    ))}
+                    <button 
+                      onClick={async () => {
+                        const url = window.prompt("Enter Image URL:");
+                        if (!url) return;
+                        const { data, error } = await supabase.from('site_gallery').insert({ 
+                          farm_id: farmData.id, 
+                          image_url: url 
+                        }).select().single();
+                        if (data) setGallery([...gallery, data]);
+                      }}
+                      style={{ height: '120px', border: '2px dashed #d8d0c1', borderRadius: '14px', background: '#fcfaf5', color: '#8b6b2f', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer' }}
+                    >
+                      <Plus size={24} />
+                      <span style={{ fontSize: '11px', fontWeight: 800 }}>Add Photo</span>
+                    </button>
+                  </div>
+               </div>
+
+               <div style={{ marginTop: '20px', borderTop: '1px solid #e5ddd0', paddingTop: '30px', display: 'flex', justifyContent: 'flex-end' }}>
                   <button type="submit" style={styles.primaryBtnLarge}>
                     <Save size={18} style={{ marginRight: '8px' }} /> Save Design Changes
                   </button>
@@ -526,7 +611,27 @@ const Dashboard = () => {
           <section style={styles.panel}>
             <div style={styles.panelHead}>
               <h3 style={styles.panelTitle}>Testimonials</h3>
-              <button style={styles.primaryBtn}>+ Add Review</button>
+              <button 
+                style={styles.primaryBtn}
+                onClick={async () => {
+                  const author_name = window.prompt("Author Name:");
+                  if (!author_name) return;
+                  const quote = window.prompt("Quote:");
+                  const author_role = window.prompt("Role (Customer, Reseller, etc):");
+                  
+                  const { data, error } = await supabase.from('testimonials').insert({
+                    farm_id: farmData.id,
+                    author_name,
+                    quote,
+                    author_role,
+                    is_active: true
+                  }).select().single();
+                  
+                  if (data) setTestimonials([...testimonials, data]);
+                }}
+              >
+                + Add Review
+              </button>
             </div>
 
             <div style={styles.customerGrid}>
@@ -554,6 +659,65 @@ const Dashboard = () => {
                   <p style={{ ...styles.rowSub, marginTop: '10px', fontStyle: 'italic' }}>"{test.quote}"</p>
                 </div>
               ))}
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'Billing' && (
+          <section style={styles.panel}>
+            <div style={styles.panelHead}>
+              <h3 style={styles.panelTitle}>SaaS Billing & Subscriptions</h3>
+              <span style={{ 
+                ...styles.pill, 
+                ...(farmData?.subscription_status === 'active' ? styles.pillGreen : styles.pillRed) 
+              }}>
+                {farmData?.subscription_status || 'Trial'}
+              </span>
+            </div>
+
+            <div style={styles.twoCol}>
+              <div style={{ ...styles.panel, background: '#fcfaf5', border: '1px dashed #d8d0c1' }}>
+                <h4 style={{ ...styles.rowStrong, fontSize: '18px', marginBottom: '15px' }}>Current Plan</h4>
+                <div style={{ fontSize: '32px', fontWeight: 900, color: '#1d4d35' }}>R400 <span style={{ fontSize: '14px', color: '#66756d' }}>/ month</span></div>
+                <p style={{ ...styles.rowSub, marginTop: '20px' }}>
+                  Includes full access to the Poultry Back Office, Site Editor, and Stock Management tools.
+                </p>
+                <div style={{ marginTop: '30px' }}>
+                   {!farmData?.setup_fee_paid && (
+                     <div style={{ background: '#fff1cc', padding: '15px', borderRadius: '15px', marginBottom: '15px', border: '1px solid #e5c07b' }}>
+                        <div style={{ fontWeight: 800, fontSize: '13px', color: '#8b6500' }}>Setup Fee Pending</div>
+                        <div style={{ fontSize: '24px', fontWeight: 900, color: '#183126' }}>R2,500.00</div>
+                     </div>
+                   )}
+                   <button style={{ ...styles.primaryBtnLarge, width: '100%' }}>
+                     <CreditCard size={18} style={{ marginRight: '10px' }} /> Update Payment Method
+                   </button>
+                </div>
+              </div>
+
+              <div style={styles.simpleList}>
+                <h4 style={styles.rowStrong}>Payment History</h4>
+                <div style={styles.simpleRow}>
+                   <div>
+                      <div style={styles.rowStrong}>Setup Fee</div>
+                      <div style={styles.rowSub}>One-time activation</div>
+                   </div>
+                   <div style={styles.rowRight}>
+                      <div style={styles.rowStrong}>R2,500</div>
+                      <div style={styles.pillRed}>Unpaid</div>
+                   </div>
+                </div>
+                <div style={styles.simpleRow}>
+                   <div>
+                      <div style={styles.rowStrong}>Monthly Subscription</div>
+                      <div style={styles.rowSub}>April 2024</div>
+                   </div>
+                   <div style={styles.rowRight}>
+                      <div style={styles.rowStrong}>R400</div>
+                      <div style={styles.pillRed}>Pending</div>
+                   </div>
+                </div>
+              </div>
             </div>
           </section>
         )}
