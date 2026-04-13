@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
 import { 
   BarChart3, 
@@ -24,6 +25,7 @@ import {
 import { uploadShopAsset, deleteOldAsset } from '../../services/supabase';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Overview');
   const [farmData, setFarmData] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -951,10 +953,10 @@ const styles = {
     color: "#fff",
   },
   sidebarCard: {
-    marginTop: "auto",
     background: "rgba(255,255,255,0.08)",
     padding: "18px",
     borderRadius: "18px",
+    marginBottom: "8px",
   },
   sidebarCardTitle: {
     fontWeight: 800,
