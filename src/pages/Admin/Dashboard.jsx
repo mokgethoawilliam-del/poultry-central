@@ -40,6 +40,7 @@ const Dashboard = () => {
   const [saveStatus, setSaveStatus] = useState('');
   const [isUploading, setIsUploading] = useState(null); // logo, hero, about
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [deleteConfirmation, setDeleteConfirmation] = useState(false);
 
@@ -235,7 +236,11 @@ const Dashboard = () => {
     <div style={styles.page}>
       <aside style={styles.sidebar}>
         <div style={styles.brandWrap}>
-          <div style={styles.logo}>{farmData?.name?.charAt(0) || 'N'}</div>
+          {farmData?.logo_url ? (
+            <img src={farmData.logo_url} alt="Logo" style={styles.logoImg} />
+          ) : (
+            <div style={styles.logo}>{farmData?.name?.charAt(0) || 'N'}</div>
+          )}
           <div>
             <div style={styles.brandTitle}>{farmData?.name || 'The New Dawn'}</div>
             <div style={styles.brandSub}>Poultry Back Office</div>
@@ -334,7 +339,7 @@ const Dashboard = () => {
                   <button 
                     style={styles.dropdownItem}
                     onClick={() => {
-                      setActiveTab('Settings');
+                      setShowProfileModal(true);
                       setShowProfileMenu(false);
                     }}
                   >
@@ -353,9 +358,8 @@ const Dashboard = () => {
                   <button 
                     style={{ ...styles.dropdownItem, color: '#dc2626' }}
                     onClick={() => {
-                      setActiveTab('Settings');
-                      setShowProfileMenu(false);
                       setDeleteConfirmation(true);
+                      setShowProfileMenu(false);
                     }}
                   >
                     <Trash2 size={14} /> Delete Account
@@ -365,6 +369,78 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Profile Modal */}
+        {showProfileModal && (
+          <div style={styles.modalOverlay} onClick={() => setShowProfileModal(false)}>
+            <div style={styles.modalContent} onClick={e => e.stopPropagation()}>
+               <div style={styles.modalHeader}>
+                  <h3 style={styles.panelTitle}>Owner Profile Settings</h3>
+                  <button onClick={() => setShowProfileModal(false)} style={styles.closeBtn}>×</button>
+               </div>
+               <div style={styles.modalBody}>
+                  <div style={styles.formGroup}>
+                     <label style={styles.label}>Full Name</label>
+                     <input 
+                       style={styles.input} 
+                       value={farmData?.name || ''} 
+                       onChange={(e) => setFarmData({...farmData, name: e.target.value})}
+                     />
+                  </div>
+                  <div style={{ ...styles.formGroup, marginTop: '20px' }}>
+                     <label style={styles.label}>Account Email</label>
+                     <input 
+                       style={{ ...styles.input, opacity: 0.7 }} 
+                       value={userEmail || ''} 
+                       disabled
+                     />
+                     <p style={styles.rowSub}>Email cannot be changed manually.</p>
+                  </div>
+                  <div style={{ marginTop: '30px' }}>
+                    <button style={styles.primaryBtnLarge} onClick={() => { handleUpdateFarm(); setShowProfileModal(false); }}>
+                      Update My Profile
+                    </button>
+                  </div>
+               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {deleteConfirmation && (
+          <div style={styles.modalOverlay} onClick={() => setDeleteConfirmation(false)}>
+            <div style={{ ...styles.modalContent, borderColor: '#fecaca' }} onClick={e => e.stopPropagation()}>
+               <div style={styles.modalHeader}>
+                  <h3 style={{ ...styles.panelTitle, color: '#dc2626' }}>Delete This Account?</h3>
+               </div>
+               <div style={styles.modalBody}>
+                  <div style={{ background: '#fff1f1', padding: '20px', borderRadius: '18px', border: '1px solid #fecaca', marginBottom: '20px' }}>
+                     <p style={{ fontSize: '14px', color: '#991b1b', lineHeight: 1.5 }}>
+                        <strong>Warning:</strong> Once you delete your account, all your farm data, products, and order history will be permanently removed. This action cannot be undone.
+                     </p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button 
+                       style={{ ...styles.primaryBtn, background: '#dc2626', flex: 1 }}
+                       onClick={async () => {
+                          alert("Action: wiping farm data and signing out.");
+                          await supabase.auth.signOut();
+                          navigate('/admin/login');
+                       }}
+                    >
+                       Confirm Delete
+                    </button>
+                    <button 
+                       style={{ ...styles.outlineBtn, flex: 1 }}
+                       onClick={() => setDeleteConfirmation(false)}
+                    >
+                       Go Back
+                    </button>
+                  </div>
+               </div>
+            </div>
+          </div>
+        )}
 
         {!farmData ? (
           <section style={styles.panel}>
@@ -913,81 +989,51 @@ const Dashboard = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
             <section style={styles.panel}>
               <div style={styles.panelHead}>
-                <h3 style={styles.panelTitle}>Owner Profile Settings</h3>
+                <h3 style={styles.panelTitle}>Business & Shop Operations</h3>
               </div>
               <div style={styles.formGrid}>
                  <div style={styles.formRow}>
                     <div style={styles.formGroup}>
-                       <label style={styles.label}>Full Name</label>
+                       <label style={styles.label}>Official Business Name</label>
                        <input 
                          style={styles.input} 
                          value={farmData?.name || ''} 
-                         onChange={(e) => setFarmData({...farmData, name: e.target.value})}
+                         placeholder="Legal Farm Name"
                        />
                     </div>
                     <div style={styles.formGroup}>
-                       <label style={styles.label}>Email Address</label>
-                       <input 
-                         style={{ ...styles.input, opacity: 0.7 }} 
-                         value={userEmail || ''} 
-                         disabled
-                       />
-                       <p style={{ ...styles.rowSub, fontSize: '10px' }}>Contact support to change your account email.</p>
+                       <label style={styles.label}>Tax / VAT Treatment</label>
+                       <select style={styles.select}>
+                          <option>Non-VAT Registered</option>
+                          <option>VAT Registered (15%)</option>
+                       </select>
                     </div>
                  </div>
-                 <div style={{ marginTop: '20px' }}>
-                    <button style={styles.primaryBtn} onClick={handleUpdateFarm}>Save Profile Changes</button>
-                 </div>
-              </div>
-            </section>
-
-            <section style={{ ...styles.panel, borderColor: '#fecaca' }}>
-              <div style={styles.panelHead}>
-                <h3 style={{ ...styles.panelTitle, color: '#dc2626' }}>Danger Zone</h3>
-              </div>
-              <div style={{ background: '#fff1f1', padding: '20px', borderRadius: '18px', border: '1px solid #fecaca' }}>
-                 <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-                    <ShieldAlert size={24} style={{ color: '#dc2626', flexShrink: 0 }} />
-                    <div>
-                       <h4 style={{ fontWeight: 800, color: '#991b1b', marginBottom: '4px' }}>Delete This Account</h4>
-                       <p style={{ fontSize: '13px', color: '#991b1b', lineHeight: 1.5 }}>
-                          Once you delete your account, there is no going back. All your farm data, products, and order history will be permanently removed.
-                       </p>
-                    </div>
-                 </div>
-
-                 {!deleteConfirmation ? (
-                    <button 
-                      style={{ ...styles.primaryBtn, background: '#dc2626', marginTop: '20px' }}
-                      onClick={() => setDeleteConfirmation(true)}
-                    >
-                       Delete My Account
-                    </button>
-                 ) : (
-                    <div style={{ marginTop: '20px', padding: '20px', background: '#fff', borderRadius: '14px', border: '1px solid #fecaca' }}>
-                       <p style={{ fontWeight: 800, marginBottom: '10px' }}>Are you absolutely sure?</p>
-                       <div style={{ display: 'flex', gap: '10px' }}>
-                          <button 
-                             style={{ ...styles.primaryBtn, background: '#dc2626' }}
-                             onClick={async () => {
-                                // In a real app, we'd delete the user's farm data and then use a supabase edge function or similar to delete the user.
-                                // For now, we'll simulate the impact and logout.
-                                alert("In this demo, we'll sign you out. In production, this would wipe your farm data.");
-                                await supabase.auth.signOut();
-                                navigate('/admin/login');
-                             }}
-                          >
-                             Yes, Delete Everything
-                          </button>
-                          <button 
-                             style={styles.outlineBtn}
-                             onClick={() => setDeleteConfirmation(false)}
-                          >
-                             Cancel
-                          </button>
+                 
+                 <div style={styles.formRow}>
+                    <div style={styles.formGroup}>
+                       <label style={styles.label}>Order Notifications</label>
+                       <div style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                             <input type="checkbox" defaultChecked /> Email Alerts
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                             <input type="checkbox" defaultChecked /> WhatsApp Alerts
+                          </label>
                        </div>
                     </div>
-                 )}
+                    <div style={styles.formGroup}>
+                       <label style={styles.label}>Shop Visibility</label>
+                       <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                          <button style={{ ...styles.tinyBtn, background: '#1d4d35', color: '#fff' }}>Open</button>
+                          <button style={styles.tinyBtn}>Paused / Vacation</button>
+                       </div>
+                    </div>
+                 </div>
+
+                 <div style={{ marginTop: '20px' }}>
+                    <button style={styles.primaryBtn} onClick={() => alert("Settings updated.")}>Update Business Settings</button>
+                 </div>
               </div>
             </section>
           </div>
@@ -1019,6 +1065,14 @@ const styles = {
     alignItems: "center",
     gap: "14px",
     marginBottom: "28px",
+  },
+  logoImg: {
+    height: '40px',
+    width: '40px',
+    borderRadius: '12px',
+    objectFit: 'contain',
+    background: '#fff',
+    padding: '4px',
   },
   logo: {
     width: "46px",
@@ -1479,6 +1533,55 @@ const styles = {
     height: '1px',
     background: '#f1ebe1',
     margin: '8px 0',
+  },
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0,0,0,0.6)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2000,
+    backdropFilter: 'blur(4px)',
+  },
+  modalContent: {
+    background: '#fff',
+    width: '100%',
+    maxWidth: '500px',
+    borderRadius: '28px',
+    padding: '30px',
+    boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+    border: '1px solid #e5ddd0',
+  },
+  modalHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '24px',
+  },
+  modalBody: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  closeBtn: {
+    background: 'none',
+    border: 'none',
+    fontSize: '24px',
+    cursor: 'pointer',
+    color: '#66756d',
+  },
+  select: {
+    padding: '12px 14px',
+    border: '1px solid #d8d0c1',
+    borderRadius: '14px',
+    background: '#fcfaf5',
+    outline: 'none',
+    fontSize: '14px',
+    fontFamily: 'inherit',
+    cursor: 'pointer',
   }
 };
 
