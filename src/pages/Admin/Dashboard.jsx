@@ -285,7 +285,21 @@ const Dashboard = () => {
       {arrivalAlert && (
         <div style={{ position: 'fixed', top: '24px', left: '50%', transform: 'translateX(-50%)', background: '#1d4d35', color: '#fff', padding: '1.25rem 2.5rem', borderRadius: '20px', boxShadow: '0 10px 30px rgba(29,77,53,0.4)', zIndex: 9999, textAlign: 'center', border: '2px solid #d5b66f' }}>
           <div style={{ fontSize: '1.6rem', fontWeight: 900 }}>🚜 CUSTOMER HAS ARRIVED!</div>
-          <div style={{ fontSize: '1rem', marginTop: '4px', opacity: 0.85 }}>Order {arrivalAlert.order_number} — {arrivalAlert.customer_name} is waiting</div>
+          <div style={{ fontSize: '1rem', marginTop: '4px', opacity: 0.85, marginBottom: '1.5rem' }}>Order {arrivalAlert.order_number} — {arrivalAlert.customer_name} is waiting</div>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+            <button 
+              onClick={() => { setActiveTab('LiveOrders'); setArrivalAlert(null); }}
+              style={{ padding: '0.75rem 1.5rem', background: '#d5b66f', color: '#1d4d35', border: 'none', borderRadius: '12px', fontWeight: 900, cursor: 'pointer', fontSize: '0.9rem' }}
+            >
+              View on Order Board
+            </button>
+            <button 
+              onClick={() => setArrivalAlert(null)}
+              style={{ padding: '0.75rem 1.5rem', background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '12px', fontWeight: 900, cursor: 'pointer', fontSize: '0.9rem' }}
+            >
+              Dismiss
+            </button>
+          </div>
         </div>
       )}
 

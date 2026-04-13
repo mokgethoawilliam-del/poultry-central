@@ -22,6 +22,8 @@ const Order = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [activeOrder, setActiveOrder] = useState(null);
+  const [notifiedArrival, setNotifiedArrival] = useState(false);
   
   const [formData, setFormData] = useState({
     customer_name: '',
@@ -44,8 +46,56 @@ const Order = () => {
       setProducts(data || []);
       setLoading(false);
     };
-    fetchProducts();
+
+    // Check for active order in localStorage
+    const savedOrderId = localStorage.getItem(`active_order_${farm.id}`);
+    if (savedOrderId) {
+      fetchActiveOrder(savedOrderId);
+    } else {
+      fetchProducts();
+    }
   }, [farm.id]);
+
+  const fetchActiveOrder = async (orderId) => {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*, order_items(*, products(*))')
+        .eq('id', orderId)
+        .single();
+      
+      if (data) {
+        setActiveOrder(data);
+        setSuccess(true);
+        setNotifiedArrival(data.customer_arrived);
+        // Subscribe to changes
+        subscribeToOrder(orderId);
+      }
+    } catch (err) {
+      console.error("Fetch active order error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const subscribeToOrder = (orderId) => {
+    supabase
+      .channel(`order-tracking-${orderId}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` }, payload => {
+        setActiveOrder(curr => ({ ...curr, ...payload.new }));
+      })
+      .subscribe();
+  };
+
+  const handleNotifyArrival = async () => {
+    if (!activeOrder) return;
+    try {
+      await supabase.from('orders').update({ customer_arrived: true }).eq('id', activeOrder.id);
+      setNotifiedArrival(true);
+    } catch (err) {
+      console.error("Notify arrival error:", err);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -79,7 +129,10 @@ const Order = () => {
         price_at_time: selectedProduct?.price || 0
       });
 
+      localStorage.setItem(`active_order_${farm.id}`, order.id);
+      setActiveOrder(order);
       setSuccess(true);
+      subscribeToOrder(order.id);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error("Order error:", err);
@@ -104,26 +157,75 @@ const Order = () => {
   if (success) return (
     <div className="pt-32 pb-24 bg-[#fcfaf5] min-h-screen">
       <div className="container mx-auto px-[5%] max-w-[800px] text-center">
-        <div className="bg-white p-12 md:p-20 rounded-[40px] shadow-2xl border border-[#e6dfd1] animate-fadeIn">
-          <div className="w-24 h-24 bg-[#1d4d35] rounded-full flex items-center justify-center text-white mx-auto mb-10 shadow-xl">
-            <CheckCircle2 size={48} />
+        <div className="bg-white p-10 md:p-16 rounded-[40px] shadow-2xl border border-[#e6dfd1] animate-fadeIn">
+          <div className="w-20 h-20 bg-[#1d4d35] rounded-full flex items-center justify-center text-white mx-auto mb-8 shadow-xl">
+            <CheckCircle2 size={40} />
           </div>
-          <h1 className="text-4xl md:text-5xl font-black text-[#183126] mb-6">Order Received!</h1>
-          <p className="text-xl text-[#5f6c65] mb-12 font-medium">
-            Thank you for choosing **{farm.name}**. We've received your inquiry and will contact you shortly to confirm stock and delivery.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center">
+          
+          <h1 className="text-3xl md:text-4xl font-black text-[#183126] mb-4">Order {activeOrder?.status === 'pending' ? 'Received' : 'Updated'}!</h1>
+          <div className="bg-[#fcfaf5] py-3 px-6 rounded-full inline-block font-black text-[#1d4d35] text-sm mb-8 border border-[#e6dfd1]">
+            REF: {activeOrder?.order_number}
+          </div>
+
+          {/* --- LIVE STATUS TRACKER --- */}
+          <div className="mb-12">
+             <div className="flex justify-between mb-4">
+               {['pending', 'confirmed', 'ready', 'completed'].map((s, idx) => {
+                 const isActive = activeOrder?.status === s;
+                 const isPast = ['pending', 'confirmed', 'ready', 'completed'].indexOf(activeOrder?.status) >= idx;
+                 return (
+                   <div key={s} className="flex flex-col items-center gap-2 flex-1 relative">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold z-10 ${isPast ? 'bg-[#1d4d35] text-white' : 'bg-gray-200 text-gray-400'}`}>
+                         {isPast ? '✓' : idx + 1}
+                      </div>
+                      <span className={`text-[9px] uppercase font-black tracking-widest ${isActive ? 'text-[#1d4d35]' : 'text-gray-400'}`}>{s}</span>
+                      {idx < 3 && <div className={`absolute top-4 left-1/2 w-full h-[2px] -z-0 ${isPast ? 'bg-[#1d4d35]' : 'bg-gray-200'}`}></div>}
+                   </div>
+                 );
+               })}
+             </div>
+             <div className="p-6 bg-[#fcfaf5] rounded-3xl border border-[#e6dfd1] text-left">
+               <p className="font-bold text-[#183126] text-sm mb-1">Status: {activeOrder?.status?.toUpperCase()}</p>
+               <p className="text-xs text-[#5f6c65]">
+                 {activeOrder?.status === 'pending' && "Your order has been sent to the farm staff."}
+                 {activeOrder?.status === 'confirmed' && "The farm has confirmed your order and is packing it now."}
+                 {activeOrder?.status === 'ready' && "Your order is ready! You can now make your way to the farm."}
+                 {activeOrder?.status === 'completed' && "This order has been fulfilled. Thank you!"}
+               </p>
+             </div>
+          </div>
+
+          {/* --- ARRIVAL ALERT BUTTON --- */}
+          {activeOrder?.status !== 'completed' && activeOrder?.fulfillment_method === 'pickup' && (
+            <div className="mb-10">
+               {!notifiedArrival ? (
+                 <button 
+                   onClick={handleNotifyArrival}
+                   className="w-full py-6 bg-[#d6c27c] text-[#183126] font-black rounded-3xl shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-3 border-2 border-[#183126]"
+                 >
+                   🚜 I'M AT THE FARM / I'VE ARRIVED
+                 </button>
+               ) : (
+                 <div className="py-6 bg-[#1d4d35] text-white font-black rounded-3xl flex items-center justify-center gap-3 shadow-inner">
+                   <CheckCircle2 size={20} /> FARM STAFF NOTIFIED
+                 </div>
+               )}
+               <p className="text-[10px] text-[#5f6c65] mt-4 font-bold uppercase tracking-widest italic">Click this only once you are outside the gates</p>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button 
               onClick={openWhatsApp}
-              className="px-10 py-5 bg-[#28c76f] text-white font-black rounded-full shadow-lg hover:bg-[#21a55c] transition-all flex items-center justify-center gap-2"
+              className="px-8 py-4 bg-[#28c76f] text-white font-bold rounded-full shadow-lg hover:bg-[#21a55c] transition-all flex items-center justify-center gap-2 text-sm"
             >
-              <MessageCircle size={22} /> Confirm on WhatsApp
+              <MessageCircle size={18} /> Chat with Farm
             </button>
             <button 
-              onClick={() => navigate(`/${farm.slug}`)}
-              className="px-10 py-5 bg-[#fcfaf5] border border-[#d8d0c1] text-[#183126] font-black rounded-full hover:bg-gray-50 transition-all"
+              onClick={() => { localStorage.removeItem(`active_order_${farm.id}`); setSuccess(false); setActiveOrder(null); window.location.reload(); }}
+              className="px-8 py-4 bg-white border border-[#d8d0c1] text-[#183126] font-bold rounded-full hover:bg-gray-50 transition-all text-sm"
             >
-              Return Home
+              New Order
             </button>
           </div>
         </div>

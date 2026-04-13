@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Outlet, useLocation } from 'react-router-dom';
+import { useParams, Outlet, useLocation, Link } from 'react-router-dom';
 import { getFarmBySlug } from '../services/supabase';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Package } from 'lucide-react';
 
 const MainLayout = () => {
   const { farmSlug } = useParams();
@@ -11,6 +11,7 @@ const MainLayout = () => {
   const [farm, setFarm] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeOrderId, setActiveOrderId] = useState(null);
 
   // Hide global Header/Footer on the home route — the user's landing page has its own nav
   const isHome = location.pathname === `/${farmSlug}` || location.pathname === `/${farmSlug}/`;
@@ -29,7 +30,18 @@ const MainLayout = () => {
       }
     };
     fetchFarm();
-  }, [farmSlug]);
+
+    // Check for active order
+    const checkOrder = () => {
+      if (farm?.id) {
+        const savedOrderId = localStorage.getItem(`active_order_${farm.id}`);
+        setActiveOrderId(savedOrderId);
+      }
+    };
+    checkOrder();
+    window.addEventListener('storage', checkOrder);
+    return () => window.removeEventListener('storage', checkOrder);
+  }, [farmSlug, farm?.id]);
 
   if (loading) return (
     <div className="h-screen w-full flex items-center justify-center bg-[#fcfaf5]">
@@ -65,6 +77,17 @@ const MainLayout = () => {
         >
           <MessageCircle size={32} />
         </a>
+      )}
+
+      {/* Track Order Float — shown when an active order exists */}
+      {activeOrderId && location.pathname !== `/${farm?.slug}/order` && (
+        <Link
+          to={`/${farm?.slug}/order`}
+          className="fixed bottom-6 left-6 bg-[#1d4d35] text-white p-4 rounded-full shadow-2xl flex items-center gap-3 z-50 hover:scale-110 transition-all border-2 border-white/20 animate-bounce"
+        >
+          <Package size={24} />
+          <span className="text-xs font-black uppercase tracking-widest pr-2 hidden sm:inline">Track Active Order</span>
+        </Link>
       )}
     </div>
   );
