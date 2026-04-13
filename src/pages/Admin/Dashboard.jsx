@@ -20,7 +20,11 @@ import {
   Calendar,
   LogOut,
   Upload,
-  Droplets
+  Droplets,
+  AlertTriangle,
+  ChevronDown,
+  User,
+  ShieldAlert
 } from 'lucide-react';
 import { uploadShopAsset, deleteOldAsset } from '../../services/supabase';
 
@@ -35,6 +39,9 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState('');
   const [isUploading, setIsUploading] = useState(null); // logo, hero, about
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const [deleteConfirmation, setDeleteConfirmation] = useState(false);
 
   // Stats
   const [stats, setStats] = useState({
@@ -50,6 +57,7 @@ const Dashboard = () => {
       // 1. Fetch farm owned by user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return navigate('/admin/login');
+      setUserEmail(user.email || '');
 
       const { data: farm, error: farmErr } = await supabase
         .from('farms')
@@ -285,30 +293,9 @@ const Dashboard = () => {
           </button>
         </div>
 
-        <div style={styles.sidebarCard}>
-          <div style={styles.sidebarCardTitle}>Farm Admin Panel</div>
-          <div style={styles.sidebarCardText}>
-            Manage poultry orders, stock, customers, and site content in one place.
-          </div>
-        </div>
-
-        <div style={styles.profileSection}>
-           <div style={styles.profileInfo}>
-              <div style={styles.profileAvatar}>{farmData?.name?.charAt(0) || 'U'}</div>
-              <div>
-                 <div style={styles.profileName}>{farmData?.name || 'User'}</div>
-                 <div style={styles.profileRoll}>Owner</div>
-              </div>
-           </div>
-           <button 
-             onClick={async () => {
-                await supabase.auth.signOut();
-                navigate('/admin/login');
-             }} 
-             style={styles.logoutBtn}
-           >
-              <LogOut size={16} /> Logout
-           </button>
+        <div style={styles.brandingFooter}>
+          <div style={styles.brandingMain}>KASI BUSINESSHUB</div>
+          <div style={styles.brandingSubText}>A Product of Atlas Automation Group</div>
         </div>
       </aside>
 
@@ -327,8 +314,55 @@ const Dashboard = () => {
               style={styles.search}
             />
             {saveStatus && <span style={styles.saveStatus}>{saveStatus}</span>}
-            <button style={styles.outlineBtn}>Export</button>
-            <button style={styles.primaryBtn} onClick={() => fetchData()}>Refresh Data</button>
+            <button style={styles.outlineBtn} onClick={() => window.open(`/${farmData?.slug}`, '_blank')}>View Shop</button>
+            
+            <div style={{ position: 'relative' }}>
+              <button 
+                style={styles.topProfileBtn}
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+              >
+                <div style={styles.topAvatar}>{farmData?.name?.charAt(0) || 'U'}</div>
+                <ChevronDown size={14} />
+              </button>
+
+              {showProfileMenu && (
+                <div style={styles.dropdownMenu}>
+                  <div style={styles.dropdownHeader}>
+                    <div style={styles.dropdownName}>{farmData?.name || 'User'}</div>
+                    <div style={styles.dropdownEmail}>{userEmail}</div>
+                  </div>
+                  <button 
+                    style={styles.dropdownItem}
+                    onClick={() => {
+                      setActiveTab('Settings');
+                      setShowProfileMenu(false);
+                    }}
+                  >
+                    <User size={14} /> Profile Settings
+                  </button>
+                  <button 
+                    style={styles.dropdownItem}
+                    onClick={async () => {
+                      await supabase.auth.signOut();
+                      navigate('/admin/login');
+                    }}
+                  >
+                    <LogOut size={14} /> Logout
+                  </button>
+                  <div style={styles.dropdownDivider} />
+                  <button 
+                    style={{ ...styles.dropdownItem, color: '#dc2626' }}
+                    onClick={() => {
+                      setActiveTab('Settings');
+                      setShowProfileMenu(false);
+                      setDeleteConfirmation(true);
+                    }}
+                  >
+                    <Trash2 size={14} /> Delete Account
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -876,9 +910,86 @@ const Dashboard = () => {
         )}
 
         {activeTab === 'Settings' && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 0', opacity: 0.2 }}>
-            <Settings size={64} />
-            <p style={{ fontSize: '24px', fontWeight: 800, marginTop: '20px' }}>Settings Under Construction</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+            <section style={styles.panel}>
+              <div style={styles.panelHead}>
+                <h3 style={styles.panelTitle}>Owner Profile Settings</h3>
+              </div>
+              <div style={styles.formGrid}>
+                 <div style={styles.formRow}>
+                    <div style={styles.formGroup}>
+                       <label style={styles.label}>Full Name</label>
+                       <input 
+                         style={styles.input} 
+                         value={farmData?.name || ''} 
+                         onChange={(e) => setFarmData({...farmData, name: e.target.value})}
+                       />
+                    </div>
+                    <div style={styles.formGroup}>
+                       <label style={styles.label}>Email Address</label>
+                       <input 
+                         style={{ ...styles.input, opacity: 0.7 }} 
+                         value={userEmail || ''} 
+                         disabled
+                       />
+                       <p style={{ ...styles.rowSub, fontSize: '10px' }}>Contact support to change your account email.</p>
+                    </div>
+                 </div>
+                 <div style={{ marginTop: '20px' }}>
+                    <button style={styles.primaryBtn} onClick={handleUpdateFarm}>Save Profile Changes</button>
+                 </div>
+              </div>
+            </section>
+
+            <section style={{ ...styles.panel, borderColor: '#fecaca' }}>
+              <div style={styles.panelHead}>
+                <h3 style={{ ...styles.panelTitle, color: '#dc2626' }}>Danger Zone</h3>
+              </div>
+              <div style={{ background: '#fff1f1', padding: '20px', borderRadius: '18px', border: '1px solid #fecaca' }}>
+                 <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                    <ShieldAlert size={24} style={{ color: '#dc2626', flexShrink: 0 }} />
+                    <div>
+                       <h4 style={{ fontWeight: 800, color: '#991b1b', marginBottom: '4px' }}>Delete This Account</h4>
+                       <p style={{ fontSize: '13px', color: '#991b1b', lineHeight: 1.5 }}>
+                          Once you delete your account, there is no going back. All your farm data, products, and order history will be permanently removed.
+                       </p>
+                    </div>
+                 </div>
+
+                 {!deleteConfirmation ? (
+                    <button 
+                      style={{ ...styles.primaryBtn, background: '#dc2626', marginTop: '20px' }}
+                      onClick={() => setDeleteConfirmation(true)}
+                    >
+                       Delete My Account
+                    </button>
+                 ) : (
+                    <div style={{ marginTop: '20px', padding: '20px', background: '#fff', borderRadius: '14px', border: '1px solid #fecaca' }}>
+                       <p style={{ fontWeight: 800, marginBottom: '10px' }}>Are you absolutely sure?</p>
+                       <div style={{ display: 'flex', gap: '10px' }}>
+                          <button 
+                             style={{ ...styles.primaryBtn, background: '#dc2626' }}
+                             onClick={async () => {
+                                // In a real app, we'd delete the user's farm data and then use a supabase edge function or similar to delete the user.
+                                // For now, we'll simulate the impact and logout.
+                                alert("In this demo, we'll sign you out. In production, this would wipe your farm data.");
+                                await supabase.auth.signOut();
+                                navigate('/admin/login');
+                             }}
+                          >
+                             Yes, Delete Everything
+                          </button>
+                          <button 
+                             style={styles.outlineBtn}
+                             onClick={() => setDeleteConfirmation(false)}
+                          >
+                             Cancel
+                          </button>
+                       </div>
+                    </div>
+                 )}
+              </div>
+            </section>
           </div>
         )}
       </main>
@@ -1280,56 +1391,94 @@ const styles = {
     fontSize: '14px',
     fontFamily: 'inherit',
   },
-  profileSection: {
+  brandingFooter: {
     marginTop: 'auto',
-    padding: '20px',
-    borderTop: '1px solid #e5ddd0',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '15px',
+    padding: '24px 14px',
+    borderTop: '1px solid rgba(255,255,255,0.08)',
   },
-  profileInfo: {
+  brandingMain: {
+    fontSize: '11px',
+    fontWeight: 900,
+    color: '#fff',
+    letterSpacing: '0.1em',
+    marginBottom: '4px',
+  },
+  brandingSubText: {
+    fontSize: '9px',
+    color: '#b7c9c0',
+    fontWeight: 600,
+  },
+  topProfileBtn: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-  },
-  profileAvatar: {
-    width: '36px',
-    height: '36px',
+    gap: '10px',
+    padding: '6px 10px',
     borderRadius: '12px',
+    border: '1px solid #d8d0c1',
+    background: '#fff',
+    cursor: 'pointer',
+    color: '#183126',
+    transition: 'all 0.2s',
+  },
+  topAvatar: {
+    width: '28px',
+    height: '28px',
+    borderRadius: '8px',
     background: '#1d4d35',
     color: '#fff',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    fontSize: '12px',
     fontWeight: 900,
-    fontSize: '14px',
   },
-  profileName: {
-    fontSize: '13px',
+  dropdownMenu: {
+    position: 'absolute',
+    top: 'calc(100% + 10px)',
+    right: 0,
+    width: '220px',
+    background: '#fff',
+    borderRadius: '18px',
+    boxShadow: '0 15px 35px rgba(0,0,0,0.1)',
+    border: '1px solid #e5ddd0',
+    padding: '8px',
+    zIndex: 1000,
+  },
+  dropdownHeader: {
+    padding: '12px 14px',
+    borderBottom: '1px solid #f1ebe1',
+    marginBottom: '8px',
+  },
+  dropdownName: {
+    fontSize: '14px',
     fontWeight: 800,
     color: '#183126',
   },
-  profileRoll: {
+  dropdownEmail: {
     fontSize: '11px',
     color: '#66756d',
-    fontWeight: 600,
+    marginTop: '2px',
   },
-  logoutBtn: {
+  dropdownItem: {
+    width: '100%',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',
-    width: '100%',
-    padding: '10px',
-    borderRadius: '12px',
-    border: '1px solid #d8d0c1',
-    background: '#fff',
+    gap: '10px',
+    padding: '10px 12px',
+    borderRadius: '10px',
+    border: 'none',
+    background: 'transparent',
     color: '#183126',
-    fontSize: '12px',
-    fontWeight: 800,
+    fontSize: '13px',
+    fontWeight: 700,
     cursor: 'pointer',
-    transition: 'all 0.2s',
+    textAlign: 'left',
+    transition: 'all 0.1s',
+  },
+  dropdownDivider: {
+    height: '1px',
+    background: '#f1ebe1',
+    margin: '8px 0',
   }
 };
 
