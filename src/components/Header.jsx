@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, MessageCircle } from 'lucide-react';
+import { firstLetter, phoneDigits, safeSlug, safeText } from '../utils/content';
 
 const Header = ({ farm }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
   const contact = farm?.contact_info || {};
+  const farmName = safeText(farm?.name, 'New Dawn Poultry');
+  const farmSlug = safeSlug(farm?.slug, 'new-dawn');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -17,18 +20,19 @@ const Header = ({ farm }) => {
   }, []);
 
   const openWhatsApp = (message = "Hello, I would like to enquire about your poultry products.") => {
-    const phone = contact.whatsapp || "27150040130"; 
     window.open(
-      `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`,
+      `https://wa.me/${phoneDigits(contact.whatsapp || contact.phone)}?text=${encodeURIComponent(message)}`,
       "_blank"
     );
   };
 
   const navLinks = [
-    { name: 'Home', path: `/${farm?.slug}` },
-    { name: 'Products', path: `/${farm?.slug}/products` },
-    { name: 'Farm Services', path: `/${farm?.slug}/services` },
-    { name: 'Contact', path: `/${farm?.slug}/contact` },
+    { name: 'Home', path: `/${farmSlug}` },
+    { name: 'Products', path: `/${farmSlug}/products` },
+    { name: 'Farm Services', path: `/${farmSlug}/services` },
+    { name: 'Gallery', path: `/${farmSlug}/gallery` },
+    { name: 'About', path: `/${farmSlug}/about` },
+    { name: 'Contact', path: `/${farmSlug}/contact` },
   ];
 
   return (
@@ -38,13 +42,21 @@ const Header = ({ farm }) => {
       <div className="container mx-auto px-[5%] max-w-[1200px]">
         <div className="flex items-center justify-between gap-5">
           {/* Logo Section */}
-          <Link to={`/${farm?.slug}`} className="flex items-center gap-3 group">
-            <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-[#1d4d35] text-white flex items-center justify-center font-bold text-lg shadow-lg group-hover:scale-110 transition-transform">
-              {farm?.name?.charAt(0) || 'N'}
-            </div>
+          <Link to={`/${farmSlug}`} className="flex items-center gap-3 group">
+            {farm?.logo_url ? (
+              <img
+                src={farm.logo_url}
+                alt={`${farmName} logo`}
+                className="w-10 h-10 md:w-11 md:h-11 rounded-full object-cover border border-[#e6dfd1] shadow-lg group-hover:scale-110 transition-transform"
+              />
+            ) : (
+              <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-[#1d4d35] text-white flex items-center justify-center font-bold text-lg shadow-lg group-hover:scale-110 transition-transform">
+                {firstLetter(farmName)}
+              </div>
+            )}
             <div className="flex flex-col">
               <span className="font-extrabold text-[#183126] text-base md:text-lg leading-tight uppercase tracking-tight">
-                {farm?.name || 'New Dawn Poultry'}
+                {farmName}
               </span>
               <span className="text-[11px] md:text-xs text-[#6b756d] font-medium">
                 Fresh poultry in Polokwane
@@ -57,7 +69,7 @@ const Header = ({ farm }) => {
             {navLinks.map((link) => (
               <a
                 key={link.name}
-                href={link.path.startsWith('/') && link.path === `/${farm?.slug}` ? '#home' : link.path}
+                href={link.path.startsWith('/') && link.path === `/${farmSlug}` ? '#home' : link.path}
                 className={`text-[15px] font-bold transition-all hover:text-[#1d4d35] ${
                   location.pathname === link.path ? 'text-[#1d4d35]' : 'text-[#183126]'
                 }`}
@@ -76,7 +88,7 @@ const Header = ({ farm }) => {
               WhatsApp Us
             </button>
             <Link
-              to={`/${farm?.slug}/order`}
+              to={`/${farmSlug}/order`}
               className="px-6 py-3 rounded-full bg-[#1d4d35] text-white font-extrabold text-sm hover:bg-[#153a28] transition-all shadow-md active:scale-95"
             >
               Order Now

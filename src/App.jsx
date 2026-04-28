@@ -6,8 +6,11 @@ import Products from './pages/Products';
 import Order from './pages/Order';
 import Services from './pages/Services';
 import Contact from './pages/Contact';
+import About from './pages/About';
+import Gallery from './pages/Gallery';
 import Dashboard from './pages/Admin/Dashboard';
 import AdminLogin from './pages/Admin/AdminLogin';
+import RegisterFarm from './pages/Admin/RegisterFarm';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Placeholder pages for those not yet fully built
@@ -33,6 +36,8 @@ function App() {
         } />
         
         <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/register" element={<RegisterFarm />} />
+        <Route path="/admin/register" element={<RegisterFarm />} />
 
         {/* Dynamic Farm Routes (Customer Site) */}
         <Route path="/:farmSlug" element={<MainLayout />}>
@@ -41,8 +46,8 @@ function App() {
           <Route path="services" element={<Services />} />
           <Route path="order" element={<Order />} />
           <Route path="contact" element={<Contact />} />
-          <Route path="about" element={<Placeholder title="About Our Farm" />} />
-          <Route path="gallery" element={<Placeholder title="Gallery" />} />
+          <Route path="about" element={<About />} />
+          <Route path="gallery" element={<Gallery />} />
         </Route>
       </Routes>
     </BrowserRouter>
