@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
 import { 
@@ -28,21 +28,27 @@ import {
   Loader2,
 } from 'lucide-react';
 import { uploadShopAsset, deleteOldAsset } from '../../services/supabase';
+import { firstLetter, safeSlug, safeText } from '../../utils/content';
+
+const productCategories = ['Live', 'Eggs', 'Meat', 'Feed', 'Bulk', 'Combo', 'Special', 'Other'];
 
 // Audio alert for new orders / arrivals
 const playDing = () => {
   try {
     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
     audio.play().catch(() => {});
-  } catch (e) { /* silent */ }
+  } catch { /* silent */ }
 };
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Overview');
+  const [siteEditorView, setSiteEditorView] = useState(null);
+  const [settingsView, setSettingsView] = useState(null);
   const [farmData, setFarmData] = useState(null);
   const [orders, setOrders] = useState([]);
   const [inventory, setInventory] = useState([]);
+  const [farmServices, setFarmServices] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
   const [gallery, setGallery] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,6 +60,44 @@ const Dashboard = () => {
   const [deleteConfirmation, setDeleteConfirmation] = useState(false);
   const [liveTime, setLiveTime] = useState(new Date().toLocaleTimeString());
   const [showBillingModal, setShowBillingModal] = useState(false);
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [showServiceModal, setShowServiceModal] = useState(false);
+  const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [showTestimonialModal, setShowTestimonialModal] = useState(false);
+  const [modalSaving, setModalSaving] = useState(false);
+  const [productImageFile, setProductImageFile] = useState(null);
+  const [editingProductId, setEditingProductId] = useState(null);
+  const [productToDelete, setProductToDelete] = useState(null);
+  const [galleryImageFile, setGalleryImageFile] = useState(null);
+  const [productForm, setProductForm] = useState({
+    name: '',
+    category: 'Live',
+    description: '',
+    price: '',
+    is_price_on_request: false,
+    stock_status: 'in_stock',
+  });
+  const [serviceForm, setServiceForm] = useState({
+    title: '',
+  });
+  const [testimonialForm, setTestimonialForm] = useState({
+    author_name: '',
+    author_role: '',
+    quote: '',
+  });
+  const farmName = safeText(farmData?.name, 'The New Dawn');
+  const farmSlug = safeSlug(farmData?.slug, 'new-dawn');
+  const pageTitleMap = {
+    Overview: 'Overview',
+    LiveOrders: 'Live Order Board',
+    Orders: 'Order History',
+    Inventory: 'Inventory',
+    FarmServices: 'Farm Services',
+    Customers: 'Customers',
+    'Site Editor': 'CMS Settings',
+    Testimonials: 'Testimonials',
+    Settings: 'Platform Settings',
+  };
 
   // ─── Security Vault State ─────────────────────────────────
   const [showVault, setShowVault] = useState(false);
@@ -164,6 +208,13 @@ const Dashboard = () => {
       const { data: prodData } = await supabase.from('products').select('*').eq('farm_id', farm.id).order('name');
       setInventory(prodData || []);
 
+      const { data: serviceData, error: serviceErr } = await supabase
+        .from('farm_services')
+        .select('*')
+        .eq('farm_id', farm.id)
+        .order('order_index');
+      if (!serviceErr) setFarmServices(serviceData || []);
+
       const { data: orderData } = await supabase.from('orders').select('*').eq('farm_id', farm.id).order('created_at', { ascending: false });
       setOrders(orderData || []);
 
@@ -206,7 +257,7 @@ const Dashboard = () => {
       if (error) throw error;
       setSaveStatus('Saved ✓');
       setTimeout(() => setSaveStatus(''), 3000);
-    } catch (err) {
+    } catch {
       setSaveStatus('Error saving');
     }
   };
@@ -220,16 +271,216 @@ const Dashboard = () => {
       const publicUrl = await uploadShopAsset(file, farmData.id, type);
       if (oldUrl && oldUrl.includes('supabase.co')) await deleteOldAsset(oldUrl);
       const updateData = { ...farmData };
-      if (type === 'logo') updateData.logo_url = publicUrl;
-      else if (type === 'hero_image') updateData.hero_image_url = publicUrl;
-      else if (type === 'about_image') updateData.about_image_url = publicUrl;
+      let columnName = null;
+      if (type === 'logo') columnName = 'logo_url';
+      else if (type === 'hero_image') columnName = 'hero_image_url';
+      else if (type === 'about_image') columnName = 'about_image_url';
+
+      if (!columnName) throw new Error('Unsupported image type');
+
+      const { error } = await supabase
+        .from('farms')
+        .update({ [columnName]: publicUrl })
+        .eq('id', farmData.id);
+      if (error) throw error;
+
+      updateData[columnName] = publicUrl;
       setFarmData(updateData);
-      setSaveStatus('Image Uploaded ✓');
+      setSaveStatus('Image Uploaded & Saved');
       setTimeout(() => setSaveStatus(''), 2000);
     } catch (err) {
+      console.error('Upload failed:', err);
       setSaveStatus('Upload Failed');
     } finally {
       setIsUploading(null);
+      e.target.value = '';
+    }
+  };
+
+  const resetProductForm = () => {
+    setProductForm({ name: '', category: 'Live', description: '', price: '', is_price_on_request: false, stock_status: 'in_stock' });
+    setProductImageFile(null);
+    setEditingProductId(null);
+  };
+
+  const openProductModal = (product = null) => {
+    if (product) {
+      setEditingProductId(product.id);
+      setProductForm({
+        name: safeText(product.name),
+        category: safeText(product.category, 'Live'),
+        description: safeText(product.description),
+        price: product.price ?? '',
+        is_price_on_request: Boolean(product.is_price_on_request),
+        stock_status: product.stock_status || 'in_stock',
+        image_url: product.image_url || '',
+      });
+    } else {
+      resetProductForm();
+    }
+    setShowProductModal(true);
+  };
+
+  const handleSaveProduct = async (e) => {
+    e.preventDefault();
+    if (!farmData?.id) return;
+    setModalSaving(true);
+    try {
+      let imageUrl = productForm.image_url || null;
+      if (productImageFile) {
+        imageUrl = await uploadShopAsset(productImageFile, farmData.id, 'product');
+      }
+
+      const productPayload = {
+        name: productForm.name,
+        category: productForm.category,
+        description: productForm.description,
+        price: productForm.is_price_on_request ? null : (productForm.price ? parseFloat(productForm.price) : null),
+        is_price_on_request: productForm.is_price_on_request,
+        stock_status: productForm.stock_status,
+        image_url: imageUrl,
+        is_active: true,
+      };
+
+      const query = editingProductId
+        ? supabase.from('products').update(productPayload).eq('id', editingProductId).select().single()
+        : supabase.from('products').insert({ ...productPayload, farm_id: farmData.id }).select().single();
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      if (data) {
+        setInventory(curr => {
+          const next = editingProductId
+            ? curr.map(item => item.id === editingProductId ? data : item)
+            : [...curr, data];
+          return next.sort((a, b) => safeText(a.name).localeCompare(safeText(b.name)));
+        });
+      }
+      resetProductForm();
+      setShowProductModal(false);
+      setSaveStatus(editingProductId ? 'Product Updated' : 'Product Added');
+      setTimeout(() => setSaveStatus(''), 2000);
+    } catch (err) {
+      console.error('Product save failed:', err);
+      setSaveStatus('Product Save Failed');
+    } finally {
+      setModalSaving(false);
+    }
+  };
+
+  const handleDeleteProduct = async (product = productToDelete) => {
+    if (!product) return;
+    try {
+      const { error } = await supabase.from('products').delete().eq('id', product.id);
+      if (error) throw error;
+      setInventory(curr => curr.filter(item => item.id !== product.id));
+      setProductToDelete(null);
+      setSaveStatus('Product Deleted');
+      setTimeout(() => setSaveStatus(''), 2000);
+    } catch (err) {
+      console.error('Product delete failed:', err);
+      setSaveStatus('Product Delete Failed');
+    }
+  };
+
+  const resetServiceForm = () => {
+    setServiceForm({ title: '' });
+  };
+
+  const handleCreateService = async (e) => {
+    e.preventDefault();
+    if (!farmData?.id) return;
+    setModalSaving(true);
+    try {
+      const { data, error } = await supabase.from('farm_services').insert({
+        farm_id: farmData.id,
+        title: serviceForm.title,
+        is_active: true,
+        order_index: farmServices.length,
+      }).select().single();
+
+      if (error) throw error;
+      if (data) setFarmServices(curr => [...curr, data]);
+      resetServiceForm();
+      setShowServiceModal(false);
+      setSaveStatus('Service Added');
+      setTimeout(() => setSaveStatus(''), 2000);
+    } catch (err) {
+      console.error('Service create failed:', err);
+      setSaveStatus('Service Save Failed');
+    } finally {
+      setModalSaving(false);
+    }
+  };
+
+  const toggleService = async (service) => {
+    const nextActive = !service.is_active;
+    const { error } = await supabase.from('farm_services').update({ is_active: nextActive }).eq('id', service.id);
+    if (!error) setFarmServices(curr => curr.map(item => item.id === service.id ? { ...item, is_active: nextActive } : item));
+  };
+
+  const deleteService = async (service) => {
+    if (!window.confirm('Delete this farm service?')) return;
+    const { error } = await supabase.from('farm_services').delete().eq('id', service.id);
+    if (!error) setFarmServices(curr => curr.filter(item => item.id !== service.id));
+  };
+
+  const handleGalleryUpload = async (e) => {
+    e.preventDefault();
+    if (!galleryImageFile || !farmData?.id) return;
+    setModalSaving(true);
+    try {
+      const imageUrl = await uploadShopAsset(galleryImageFile, farmData.id, 'gallery');
+      const { data, error } = await supabase.from('site_gallery').insert({
+        farm_id: farmData.id,
+        image_url: imageUrl,
+        order_index: gallery.length,
+        is_active: true,
+      }).select().single();
+
+      if (error) throw error;
+      if (data) setGallery(curr => [...curr, data]);
+      setGalleryImageFile(null);
+      setShowGalleryModal(false);
+      setSaveStatus('Gallery Image Added');
+      setTimeout(() => setSaveStatus(''), 2000);
+    } catch (err) {
+      console.error('Gallery upload failed:', err);
+      setSaveStatus('Gallery Upload Failed');
+    } finally {
+      setModalSaving(false);
+    }
+  };
+
+  const resetTestimonialForm = () => {
+    setTestimonialForm({ author_name: '', author_role: '', quote: '' });
+  };
+
+  const handleCreateTestimonial = async (e) => {
+    e.preventDefault();
+    if (!farmData?.id) return;
+    setModalSaving(true);
+    try {
+      const { data, error } = await supabase.from('testimonials').insert({
+        farm_id: farmData.id,
+        author_name: testimonialForm.author_name,
+        author_role: testimonialForm.author_role,
+        quote: testimonialForm.quote,
+        is_active: true,
+      }).select().single();
+
+      if (error) throw error;
+      if (data) setTestimonials(curr => [data, ...curr]);
+      resetTestimonialForm();
+      setShowTestimonialModal(false);
+      setSaveStatus('Review Added');
+      setTimeout(() => setSaveStatus(''), 2000);
+    } catch (err) {
+      console.error('Review create failed:', err);
+      setSaveStatus('Review Save Failed');
+    } finally {
+      setModalSaving(false);
     }
   };
 
@@ -530,7 +781,7 @@ const Dashboard = () => {
             <div style={styles.modalBody}>
               <div style={styles.formGroup}>
                 <label style={styles.label}>Farm / Business Name</label>
-                <input style={styles.input} value={farmData?.name || ''} onChange={e => setFarmData({ ...farmData, name: e.target.value })} />
+                <input style={styles.input} value={safeText(farmData?.name)} onChange={e => setFarmData({ ...farmData, name: e.target.value })} />
               </div>
               <div style={{ ...styles.formGroup, marginTop: '20px' }}>
                 <label style={styles.label}>Account Email</label>
@@ -598,10 +849,10 @@ const Dashboard = () => {
           {farmData?.logo_url ? (
             <img src={farmData.logo_url} alt="Logo" style={styles.logoImg} />
           ) : (
-            <div style={styles.logo}>{farmData?.name?.charAt(0) || 'N'}</div>
+            <div style={styles.logo}>{firstLetter(farmName)}</div>
           )}
           <div>
-            <div style={styles.brandTitle}>{farmData?.name || 'The New Dawn'}</div>
+            <div style={styles.brandTitle}>{farmName}</div>
             <div style={styles.brandSub}>Poultry Back Office</div>
           </div>
         </div>
@@ -612,8 +863,9 @@ const Dashboard = () => {
             { id: 'LiveOrders', icon: <Clock3 size={18} />, label: 'Live Order Board' },
             { id: 'Orders', icon: <ShoppingBag size={18} />, label: 'Order History' },
             { id: 'Inventory', icon: <Package size={18} />, label: 'Inventory' },
+            { id: 'FarmServices', icon: <Truck size={18} />, label: 'Farm Services' },
             { id: 'Customers', icon: <Users size={18} />, label: 'Customers' },
-            { id: 'Site Editor', icon: <Layout size={18} />, label: 'Site Editor' },
+            { id: 'Site Editor', icon: <Layout size={18} />, label: 'CMS Settings' },
             { id: 'Testimonials', icon: <MessageSquare size={18} />, label: 'Testimonials' },
             { id: 'Settings', icon: <Settings size={18} />, label: 'Settings' },
           ].map(item => (
@@ -636,25 +888,25 @@ const Dashboard = () => {
         <div style={styles.topbar}>
           <div>
             <div style={styles.kicker}>Farm Operations Dashboard</div>
-            <h1 style={styles.pageTitle}>{activeTab === 'LiveOrders' ? '🌽 Live Order Board' : (activeTab || 'Overview')}</h1>
+            <h1 style={styles.pageTitle}>{activeTab === 'LiveOrders' ? '🌽 Live Order Board' : (pageTitleMap[activeTab] || activeTab || 'Overview')}</h1>
           </div>
           <div style={styles.topbarActions}>
             {activeTab === 'LiveOrders' && (
               <span style={{ ...styles.saveStatus, background: '#e6f5ea', color: '#1d4d35' }}>{liveTime}</span>
             )}
             {saveStatus && <span style={styles.saveStatus}>{saveStatus}</span>}
-            <button style={styles.outlineBtn} onClick={() => window.open(`/${farmData?.slug}`, '_blank')}>View Farm Site</button>
+            <button style={styles.outlineBtn} onClick={() => window.open(`/${farmSlug}`, '_blank')}>View Farm Site</button>
 
             {/* Profile Dropdown */}
             <div style={{ position: 'relative' }}>
               <button style={styles.topProfileBtn} onClick={() => setShowProfileMenu(!showProfileMenu)}>
-                <div style={styles.topAvatar}>{farmData?.name?.charAt(0) || 'U'}</div>
+                <div style={styles.topAvatar}>{firstLetter(farmName, 'U')}</div>
                 <ChevronDown size={14} />
               </button>
               {showProfileMenu && (
                 <div style={styles.dropdownMenu}>
                   <div style={styles.dropdownHeader}>
-                    <div style={styles.dropdownName}>{farmData?.name || 'User'}</div>
+                    <div style={styles.dropdownName}>{farmName || 'User'}</div>
                     <div style={styles.dropdownEmail}>{userEmail}</div>
                   </div>
                   <button style={styles.dropdownItem} onClick={() => { setShowProfileModal(true); setShowProfileMenu(false); }}>
@@ -693,7 +945,7 @@ const Dashboard = () => {
                   if (!name) return;
                   const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
                   const { data: { user } } = await supabase.auth.getUser();
-                  const { data, error } = await supabase.from('farms').insert({ name, slug, owner_id: user.id, branding: { primary_color: '#1d4d35' } }).select().single();
+                  const { data } = await supabase.from('farms').insert({ name, slug, owner_id: user.id, branding: { primary_color: '#1d4d35' } }).select().single();
                   if (data) setFarmData(data);
                 }}>Create My Farm</button>
               </div>
@@ -943,31 +1195,73 @@ const Dashboard = () => {
           <section style={styles.panel}>
             <div style={styles.panelHead}>
               <h3 style={styles.panelTitle}>Inventory Management</h3>
-              <button style={styles.primaryBtn} onClick={async () => {
-                const name = window.prompt('Product Name:');
-                if (!name) return;
-                const price = window.prompt('Price (R):');
-                const category = window.prompt('Category (Live Birds, Eggs, Meat, Feed):');
-                const { data } = await supabase.from('products').insert({ farm_id: farmData.id, name, price: parseFloat(price), category, stock_status: 'in_stock' }).select().single();
-                if (data) setInventory([...inventory, data]);
-              }}>+ Add Product</button>
+              <button style={styles.primaryBtn} onClick={() => openProductModal()}>+ Add Product</button>
             </div>
             <div style={styles.inventoryGrid}>
               {inventory.map(item => (
                 <div key={item.id} style={styles.inventoryCard}>
+                  {item.image_url && <img src={item.image_url} alt="" style={{ width: '100%', height: '130px', objectFit: 'cover', borderRadius: '16px', marginBottom: '14px' }} />}
                   <div style={styles.inventoryTop}>
                     <div>
-                      <div style={styles.cardTitle}>{item.name}</div>
-                      <div style={styles.rowSub}>{item.category}</div>
+                      <div style={styles.cardTitle}>{safeText(item.name, 'Inventory Item')}</div>
+                      <div style={styles.rowSub}>{safeText(item.category, 'Uncategorized')}</div>
                     </div>
                     <span style={{ ...styles.pill, ...(item.stock_status === 'in_stock' ? styles.pillGreen : item.stock_status === 'out_of_stock' ? styles.pillRed : styles.pillPending) }}>
                       {item.stock_status?.replace('_', ' ')}
                     </span>
                   </div>
                   <div style={styles.inventoryCount}>{item.stock || 0} units</div>
-                  <div style={{ ...styles.rowSub, marginTop: '10px' }}>Price: R{item.price}</div>
+                  <div style={{ ...styles.rowSub, marginTop: '10px' }}>
+                    Price: {item.is_price_on_request || item.price === null || item.price === undefined ? 'Quote' : `R${item.price}`}
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '18px' }}>
+                    <button style={{ ...styles.tinyBtn, flex: 1, justifyContent: 'center' }} onClick={() => openProductModal(item)}>
+                      <Eye size={14} /> Edit
+                    </button>
+                    <button style={{ ...styles.tinyBtn, flex: 1, justifyContent: 'center', color: '#b24134' }} onClick={() => setProductToDelete(item)}>
+                      <Trash2 size={14} /> Delete
+                    </button>
+                  </div>
                 </div>
               ))}
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'FarmServices' && (
+          <section style={styles.panel}>
+            <div style={styles.panelHead}>
+              <div>
+                <h3 style={styles.panelTitle}>Farm Services</h3>
+                <p style={styles.rowSub}>Manage the services shown on the public Farm Services page.</p>
+              </div>
+              <button style={styles.primaryBtn} onClick={() => setShowServiceModal(true)}>+ Add Service</button>
+            </div>
+            <div style={styles.customerGrid}>
+              {farmServices.map(service => (
+                <div key={service.id} style={{ ...styles.customerCard, opacity: service.is_active ? 1 : 0.55 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={styles.cardTitle}>{safeText(service.title, 'Farm Service')}</div>
+                      <div style={styles.rowSub}>Shown as a bullet on your public services page.</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button style={styles.tinyBtn} onClick={() => toggleService(service)}>
+                        {service.is_active ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                      <button style={{ ...styles.tinyBtn, color: '#b24134' }} onClick={() => deleteService(service)}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {farmServices.length === 0 && (
+                <div style={{ ...styles.customerCard, textAlign: 'center' }}>
+                  <div style={styles.cardTitle}>No services added yet</div>
+                  <p style={styles.rowSub}>Add delivery, bulk supply, slaughtering, bookings, or any custom service your farm offers.</p>
+                </div>
+              )}
             </div>
           </section>
         )}
@@ -998,109 +1292,140 @@ const Dashboard = () => {
 
         {/* ── SITE EDITOR ───────────────────────────────────── */}
         {activeTab === 'Site Editor' && (
-          <section style={styles.panel}>
-            <div style={styles.panelHead}>
-              <h3 style={styles.panelTitle}>Content & Branding</h3>
-              <p style={styles.rowSub}>Update your landing page content instantly.</p>
-            </div>
-            <form onSubmit={handleUpdateFarm} style={styles.formGrid}>
-              <div style={styles.formRow}>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Farm Name / Site Title</label>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <input style={{ ...styles.input, flex: 1 }} value={farmData?.name || ''} onChange={e => setFarmData({ ...farmData, name: e.target.value })} />
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <label style={{ ...styles.label, fontSize: '9px' }}>Brand Color</label>
-                      <input type="color" style={{ width: '40px', height: '36px', border: '1px solid #d8d0c1', borderRadius: '8px', cursor: 'pointer', padding: '2px' }}
-                        value={farmData?.primary_color || '#1d4d35'} onChange={e => setFarmData({ ...farmData, primary_color: e.target.value })} />
-                    </div>
-                  </div>
-                </div>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Farm Logo</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    {farmData?.logo_url && <img src={farmData.logo_url} alt="Logo" style={{ height: '40px', width: '40px', borderRadius: '8px', objectFit: 'contain', border: '1px solid #efe8dc' }} />}
-                    <label style={{ ...styles.primaryBtn, cursor: 'pointer', flex: 1, textAlign: 'center' }}>
-                      {isUploading === 'logo' ? 'Uploading...' : 'Upload New Logo'}
-                      <input type="file" hidden accept="image/*" onChange={e => handleFileUpload(e, 'logo')} />
-                    </label>
-                  </div>
+          !siteEditorView ? (
+            <section style={styles.panel}>
+              <div style={styles.panelHead}>
+                <div>
+                  <h3 style={styles.panelTitle}>CMS Settings</h3>
+                  <p style={styles.rowSub}>Choose what you want to work on instead of opening every website setting at once.</p>
                 </div>
               </div>
-              <div style={styles.formRow}>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Hero Headline</label>
-                  <input style={styles.input} value={farmData?.branding?.hero_headline || ''} onChange={e => setFarmData({ ...farmData, branding: { ...farmData.branding, hero_headline: e.target.value } })} />
-                </div>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Hero Image</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    {farmData?.hero_image_url && <img src={farmData.hero_image_url} alt="Hero" style={{ height: '40px', width: '40px', borderRadius: '8px', objectFit: 'cover' }} />}
-                    <label style={{ ...styles.primaryBtn, cursor: 'pointer', flex: 1, textAlign: 'center' }}>
-                      {isUploading === 'hero_image' ? 'Uploading...' : 'Upload Image'}
-                      <input type="file" hidden accept="image/*" onChange={e => handleFileUpload(e, 'hero_image')} />
-                    </label>
-                  </div>
-                </div>
-              </div>
-              <div style={styles.formRow}>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Our Story / About</label>
-                  <textarea style={{ ...styles.input, height: '120px', resize: 'none' }} value={farmData?.about_story || ''} onChange={e => setFarmData({ ...farmData, about_story: e.target.value })} />
-                </div>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>About Section Image</label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {farmData?.about_image_url && <img src={farmData.about_image_url} alt="About" style={{ height: '80px', width: '100%', borderRadius: '14px', objectFit: 'cover' }} />}
-                    <label style={{ ...styles.primaryBtn, cursor: 'pointer', textAlign: 'center' }}>
-                      {isUploading === 'about_image' ? 'Uploading...' : 'Upload Photo'}
-                      <input type="file" hidden accept="image/*" onChange={e => handleFileUpload(e, 'about_image')} />
-                    </label>
-                  </div>
-                </div>
-              </div>
-              <div style={styles.formRow}>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>WhatsApp Number</label>
-                  <input style={styles.input} value={farmData?.contact_info?.whatsapp || ''} onChange={e => setFarmData({ ...farmData, contact_info: { ...farmData.contact_info, whatsapp: e.target.value } })} />
-                </div>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Address</label>
-                  <input style={styles.input} value={farmData?.contact_info?.address || ''} onChange={e => setFarmData({ ...farmData, contact_info: { ...farmData.contact_info, address: e.target.value } })} />
-                </div>
-              </div>
-
-              {/* Gallery */}
-              <div style={{ borderTop: '1px solid #e5ddd0', paddingTop: '30px' }}>
-                <h4 style={{ ...styles.panelTitle, marginBottom: '10px' }}>Site Gallery</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '15px', marginTop: '20px' }}>
-                  {gallery.map(img => (
-                    <div key={img.id} style={{ position: 'relative', borderRadius: '14px', overflow: 'hidden', height: '120px', border: '1px solid #e5ddd0' }}>
-                      <img src={img.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      <button onClick={async () => { await supabase.from('site_gallery').delete().eq('id', img.id); setGallery(gallery.filter(g => g.id !== img.id)); }} style={{ position: 'absolute', top: '5px', right: '5px', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
-                  ))}
-                  <button onClick={async () => {
-                    const url = window.prompt('Enter Image URL:');
-                    if (!url) return;
-                    const { data } = await supabase.from('site_gallery').insert({ farm_id: farmData.id, image_url: url }).select().single();
-                    if (data) setGallery([...gallery, data]);
-                  }} style={{ height: '120px', border: '2px dashed #d8d0c1', borderRadius: '14px', background: '#fcfaf5', color: '#8b6b2f', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer' }}>
-                    <Plus size={24} />
-                    <span style={{ fontSize: '11px', fontWeight: 800 }}>Add Photo</span>
+              <div style={styles.settingsHubGrid}>
+                {[
+                  { id: 'brand', title: 'Brand & Website Identity', description: 'Farm name, colours, hero copy, logo, about section, and contact details.', cta: 'Open brand editor' },
+                  { id: 'gallery', title: 'Gallery Manager', description: 'Manage the public gallery photos that give the farm site more life.', cta: 'Open gallery manager' },
+                ].map(item => (
+                  <button key={item.id} type="button" style={styles.settingsHubCard} onClick={() => setSiteEditorView(item.id)}>
+                    <div style={styles.settingsHubKicker}>CMS Tool</div>
+                    <div style={styles.settingsHubTitle}>{item.title}</div>
+                    <div style={styles.rowSub}>{item.description}</div>
+                    <div style={styles.settingsHubLink}>{item.cta} →</div>
                   </button>
+                ))}
+              </div>
+            </section>
+          ) : (
+            <section style={styles.panel}>
+              <div style={styles.panelHead}>
+                <div>
+                  <h3 style={styles.panelTitle}>{siteEditorView === 'brand' ? 'Brand & Website Identity' : 'Gallery Manager'}</h3>
+                  <p style={styles.rowSub}>
+                    {siteEditorView === 'brand'
+                      ? 'Update the public face of the farm without digging through unrelated settings.'
+                      : 'Curate the gallery photos shown on the public site.'}
+                  </p>
                 </div>
+                <button type="button" style={styles.outlineBtn} onClick={() => setSiteEditorView(null)}>← Back to CMS Settings</button>
               </div>
 
-              <div style={{ borderTop: '1px solid #e5ddd0', paddingTop: '30px', display: 'flex', justifyContent: 'flex-end' }}>
-                <button type="submit" style={styles.primaryBtnLarge}>
-                  <Save size={18} style={{ marginRight: '8px' }} /> Save Design Changes
-                </button>
-              </div>
-            </form>
-          </section>
+              {siteEditorView === 'brand' && (
+                <form onSubmit={handleUpdateFarm} style={styles.formGrid}>
+                  <div style={styles.formRow}>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Farm Name / Site Title</label>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <input style={{ ...styles.input, flex: 1 }} value={safeText(farmData?.name)} onChange={e => setFarmData({ ...farmData, name: e.target.value })} />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={{ ...styles.label, fontSize: '9px' }}>Brand Color</label>
+                          <input type="color" style={{ width: '40px', height: '36px', border: '1px solid #d8d0c1', borderRadius: '8px', cursor: 'pointer', padding: '2px' }}
+                            value={farmData?.primary_color || '#1d4d35'} onChange={e => setFarmData({ ...farmData, primary_color: e.target.value })} />
+                        </div>
+                      </div>
+                    </div>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Farm Logo</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {farmData?.logo_url && <img src={farmData.logo_url} alt="Logo" style={{ height: '40px', width: '40px', borderRadius: '8px', objectFit: 'contain', border: '1px solid #efe8dc' }} />}
+                        <label style={{ ...styles.primaryBtn, cursor: 'pointer', flex: 1, textAlign: 'center' }}>
+                          {isUploading === 'logo' ? 'Uploading...' : 'Upload New Logo'}
+                          <input type="file" hidden accept="image/*" onChange={e => handleFileUpload(e, 'logo')} />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={styles.formRow}>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Hero Headline</label>
+                      <input style={styles.input} value={safeText(farmData?.branding?.hero_headline)} onChange={e => setFarmData({ ...farmData, branding: { ...farmData.branding, hero_headline: e.target.value } })} />
+                    </div>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Hero Image</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {farmData?.hero_image_url && <img src={farmData.hero_image_url} alt="Hero" style={{ height: '40px', width: '40px', borderRadius: '8px', objectFit: 'cover' }} />}
+                        <label style={{ ...styles.primaryBtn, cursor: 'pointer', flex: 1, textAlign: 'center' }}>
+                          {isUploading === 'hero_image' ? 'Uploading...' : 'Upload Image'}
+                          <input type="file" hidden accept="image/*" onChange={e => handleFileUpload(e, 'hero_image')} />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={styles.formRow}>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Our Story / About</label>
+                      <textarea style={{ ...styles.input, height: '120px', resize: 'none' }} value={safeText(farmData?.about_story)} onChange={e => setFarmData({ ...farmData, about_story: e.target.value })} />
+                    </div>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>About Section Image</label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {farmData?.about_image_url && <img src={farmData.about_image_url} alt="About" style={{ height: '80px', width: '100%', borderRadius: '14px', objectFit: 'cover' }} />}
+                        <label style={{ ...styles.primaryBtn, cursor: 'pointer', textAlign: 'center' }}>
+                          {isUploading === 'about_image' ? 'Uploading...' : 'Upload Photo'}
+                          <input type="file" hidden accept="image/*" onChange={e => handleFileUpload(e, 'about_image')} />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={styles.formRow}>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>WhatsApp Number</label>
+                      <input style={styles.input} value={safeText(farmData?.contact_info?.whatsapp)} onChange={e => setFarmData({ ...farmData, contact_info: { ...farmData.contact_info, whatsapp: e.target.value } })} />
+                    </div>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Address</label>
+                      <input style={styles.input} value={safeText(farmData?.contact_info?.address)} onChange={e => setFarmData({ ...farmData, contact_info: { ...farmData.contact_info, address: e.target.value } })} />
+                    </div>
+                  </div>
+                  <div style={{ borderTop: '1px solid #e5ddd0', paddingTop: '30px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button type="submit" style={styles.primaryBtnLarge}>
+                      <Save size={18} style={{ marginRight: '8px' }} /> Save Brand Changes
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {siteEditorView === 'gallery' && (
+                <div style={{ display: 'grid', gap: '18px' }}>
+                  <div style={{ ...styles.panel, background: '#fcfaf5', boxShadow: 'none', padding: '18px' }}>
+                    <div style={styles.rowSub}>Use this for real farm images, facilities, delivery scenes, staff, or stock moments that help customers trust the business.</div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '15px' }}>
+                    {gallery.map(img => (
+                      <div key={img.id} style={{ position: 'relative', borderRadius: '14px', overflow: 'hidden', height: '120px', border: '1px solid #e5ddd0' }}>
+                        <img src={img.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <button onClick={async () => { await supabase.from('site_gallery').delete().eq('id', img.id); setGallery(gallery.filter(g => g.id !== img.id)); }} style={{ position: 'absolute', top: '5px', right: '5px', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    ))}
+                    <button type="button" onClick={() => setShowGalleryModal(true)} style={{ height: '120px', border: '2px dashed #d8d0c1', borderRadius: '14px', background: '#fcfaf5', color: '#8b6b2f', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <Plus size={24} />
+                      <span style={{ fontSize: '11px', fontWeight: 800 }}>Add Photo</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </section>
+          )
         )}
 
         {/* ── TESTIMONIALS ──────────────────────────────────── */}
@@ -1108,20 +1433,13 @@ const Dashboard = () => {
           <section style={styles.panel}>
             <div style={styles.panelHead}>
               <h3 style={styles.panelTitle}>Testimonials</h3>
-              <button style={styles.primaryBtn} onClick={async () => {
-                const author_name = window.prompt('Author Name:');
-                if (!author_name) return;
-                const quote = window.prompt('Quote:');
-                const author_role = window.prompt('Role (Customer, Reseller, etc):');
-                const { data } = await supabase.from('testimonials').insert({ farm_id: farmData.id, author_name, quote, author_role, is_active: true }).select().single();
-                if (data) setTestimonials([...testimonials, data]);
-              }}>+ Add Review</button>
+              <button style={styles.primaryBtn} onClick={() => setShowTestimonialModal(true)}>+ Add Review</button>
             </div>
             <div style={styles.customerGrid}>
               {testimonials.map(test => (
                 <div key={test.id} style={{ ...styles.customerCard, opacity: test.is_active ? 1 : 0.6 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', width: '100%' }}>
-                    <div style={styles.avatar}>{test.author_name.charAt(0)}</div>
+                    <div style={styles.avatar}>{firstLetter(test.author_name, 'C')}</div>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button onClick={() => toggleTestimonial(test.id, test.is_active)} style={{ ...styles.tinyBtn, background: test.is_active ? '#e6f5ea' : '#fff' }}>
                         {test.is_active ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -1131,9 +1449,9 @@ const Dashboard = () => {
                       </button>
                     </div>
                   </div>
-                  <div style={styles.cardTitle}>{test.author_name}</div>
-                  <div style={{ ...styles.rowSub, fontWeight: 700, color: '#1d4d35' }}>{test.author_role}</div>
-                  <p style={{ ...styles.rowSub, marginTop: '10px', fontStyle: 'italic' }}>"{test.quote}"</p>
+                  <div style={styles.cardTitle}>{safeText(test.author_name, 'Customer')}</div>
+                  <div style={{ ...styles.rowSub, fontWeight: 700, color: '#1d4d35' }}>{safeText(test.author_role, 'Customer')}</div>
+                  <p style={{ ...styles.rowSub, marginTop: '10px', fontStyle: 'italic' }}>"{safeText(test.quote, 'Reliable service and fresh poultry.')}"</p>
                 </div>
               ))}
             </div>
@@ -1144,58 +1462,343 @@ const Dashboard = () => {
 
         {/* ── SETTINGS ──────────────────────────────────────── */}
         {activeTab === 'Settings' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+          !settingsView ? (
             <section style={styles.panel}>
               <div style={styles.panelHead}>
-                <h3 style={styles.panelTitle}>Business & Shop Operations</h3>
+                <div>
+                  <h3 style={styles.panelTitle}>Platform Settings</h3>
+                  <p style={styles.rowSub}>Choose the settings area you want to adjust, instead of stacking every control in one scroll wall.</p>
+                </div>
               </div>
-              <div style={styles.formGrid}>
-                <div style={styles.formRow}>
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>Official Business Name</label>
-                    <input style={styles.input} value={farmData?.business_config?.official_name || ''} onChange={e => setFarmData({ ...farmData, business_config: { ...farmData.business_config, official_name: e.target.value } })} placeholder="Legal Farm Name" />
-                  </div>
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>Tax / VAT Treatment</label>
-                    <select style={styles.select} value={farmData?.business_config?.tax_enabled ? 'vat' : 'none'} onChange={e => setFarmData({ ...farmData, business_config: { ...farmData.business_config, tax_enabled: e.target.value === 'vat' } })}>
-                      <option value="none">Non-VAT Registered</option>
-                      <option value="vat">VAT Registered (15%)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div style={styles.formRow}>
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>Order Notifications</label>
-                    <div style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
-                      {[{ key: 'email', label: 'Email Alerts' }, { key: 'whatsapp', label: 'WhatsApp Alerts' }].map(n => (
-                        <label key={n.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={farmData?.business_config?.notifications?.[n.key] ?? true}
-                            onChange={e => setFarmData({ ...farmData, business_config: { ...farmData.business_config, notifications: { ...farmData.business_config?.notifications, [n.key]: e.target.checked } } })} />
-                          {n.label}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>Shop Status</label>
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                      {[{ val: 'open', label: 'Open', activeStyle: { background: '#1d4d35', color: '#fff' } },
-                        { val: 'closed', label: 'Paused / Vacation', activeStyle: { background: '#dc2626', color: '#fff' } }].map(o => (
-                        <button key={o.val} style={{ ...styles.tinyBtn, ...(farmData?.business_config?.shop_status === o.val ? o.activeStyle : {}) }}
-                          onClick={() => setFarmData({ ...farmData, business_config: { ...farmData.business_config, shop_status: o.val } })}>
-                          {o.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ marginTop: '20px' }}>
-                  <button style={styles.primaryBtn} onClick={handleUpdateFarm}>Save Business Settings</button>
-                </div>
+              <div style={styles.settingsHubGrid}>
+                {[
+                  { id: 'hero', title: 'Landing Page Hero', description: 'Preview and update the main storefront hero image.', cta: 'Open hero settings' },
+                  { id: 'operations', title: 'Business & Shop Operations', description: 'Shop status, official business name, tax handling, and notification preferences.', cta: 'Open operations settings' },
+                ].map(item => (
+                  <button key={item.id} type="button" style={styles.settingsHubCard} onClick={() => setSettingsView(item.id)}>
+                    <div style={styles.settingsHubKicker}>Settings Area</div>
+                    <div style={styles.settingsHubTitle}>{item.title}</div>
+                    <div style={styles.rowSub}>{item.description}</div>
+                    <div style={styles.settingsHubLink}>{item.cta} →</div>
+                  </button>
+                ))}
               </div>
             </section>
+          ) : (
+            <section style={styles.panel}>
+              <div style={styles.panelHead}>
+                <div>
+                  <h3 style={styles.panelTitle}>{settingsView === 'hero' ? 'Landing Page Hero' : 'Business & Shop Operations'}</h3>
+                  <p style={styles.rowSub}>
+                    {settingsView === 'hero'
+                      ? 'Control the first impression customers get when they land on the public farm site.'
+                      : 'Adjust operating rules and business preferences without touching storefront copy.'}
+                  </p>
+                </div>
+                <button type="button" style={styles.outlineBtn} onClick={() => setSettingsView(null)}>← Back to Settings</button>
+              </div>
+
+              {settingsView === 'hero' && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1.15fr) minmax(260px, 0.85fr)', gap: '24px', alignItems: 'stretch' }}>
+                  <div style={{ minHeight: '280px', borderRadius: '24px', overflow: 'hidden', border: '1px solid #e5ddd0', background: '#143728', position: 'relative' }}>
+                    {farmData?.hero_image_url ? (
+                      <img src={farmData.hero_image_url} alt="Landing page hero preview" style={{ width: '100%', height: '100%', minHeight: '280px', objectFit: 'cover', display: 'block' }} />
+                    ) : (
+                      <div style={{ minHeight: '280px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d5b66f', fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                        No hero image uploaded
+                      </div>
+                    )}
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(16,36,25,0.78), rgba(16,36,25,0.1))', pointerEvents: 'none' }} />
+                    <div style={{ position: 'absolute', left: '24px', bottom: '24px', color: '#fff', maxWidth: '360px' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 900, color: '#d5b66f', letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: '8px' }}>
+                        Public hero preview
+                      </div>
+                      <div style={{ fontSize: '28px', fontWeight: 900, lineHeight: 1.05 }}>
+                        {safeText(farmData?.branding?.hero_headline, farmName || 'New Dawn Poultry')}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '18px', background: '#fcfaf5', border: '1px solid #e5ddd0', borderRadius: '24px', padding: '22px' }}>
+                    <div>
+                      <label style={styles.label}>Hero Image Upload</label>
+                      <p style={{ ...styles.rowSub, marginBottom: '18px' }}>
+                        Use a wide, clear farm photo. The landing page darkens the left side automatically so the headline stays readable.
+                      </p>
+                      <label style={{ ...styles.primaryBtnLarge, cursor: isUploading === 'hero_image' ? 'wait' : 'pointer', justifyContent: 'center' }}>
+                        {isUploading === 'hero_image' ? 'Uploading Hero...' : 'Upload New Hero Image'}
+                        <input type="file" hidden accept="image/*" disabled={isUploading === 'hero_image'} onChange={e => handleFileUpload(e, 'hero_image')} />
+                      </label>
+                    </div>
+
+                    {farmData?.hero_image_url && (
+                      <div>
+                        <label style={styles.label}>Current Hero URL</label>
+                        <input style={{ ...styles.input, fontSize: '12px' }} value={farmData.hero_image_url} readOnly />
+                      </div>
+                    )}
+                    <a
+                      href={`/${farmSlug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ ...styles.outlineBtn, textDecoration: 'none', textAlign: 'center' }}
+                    >
+                      Preview Landing Page
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {settingsView === 'operations' && (
+                <div style={styles.formGrid}>
+                  <div style={styles.formRow}>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Official Business Name</label>
+                      <input style={styles.input} value={farmData?.business_config?.official_name || ''} onChange={e => setFarmData({ ...farmData, business_config: { ...farmData.business_config, official_name: e.target.value } })} placeholder="Legal Farm Name" />
+                    </div>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Tax / VAT Treatment</label>
+                      <select style={styles.select} value={farmData?.business_config?.tax_enabled ? 'vat' : 'none'} onChange={e => setFarmData({ ...farmData, business_config: { ...farmData.business_config, tax_enabled: e.target.value === 'vat' } })}>
+                        <option value="none">Non-VAT Registered</option>
+                        <option value="vat">VAT Registered (15%)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={styles.formRow}>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Order Notifications</label>
+                      <div style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
+                        {[{ key: 'email', label: 'Email Alerts' }, { key: 'whatsapp', label: 'WhatsApp Alerts' }].map(n => (
+                          <label key={n.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={farmData?.business_config?.notifications?.[n.key] ?? true}
+                              onChange={e => setFarmData({ ...farmData, business_config: { ...farmData.business_config, notifications: { ...farmData.business_config?.notifications, [n.key]: e.target.checked } } })} />
+                            {n.label}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Shop Status</label>
+                      <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                        {[{ val: 'open', label: 'Open', activeStyle: { background: '#1d4d35', color: '#fff' } },
+                          { val: 'closed', label: 'Paused / Vacation', activeStyle: { background: '#dc2626', color: '#fff' } }].map(o => (
+                          <button key={o.val} type="button" style={{ ...styles.tinyBtn, ...(farmData?.business_config?.shop_status === o.val ? o.activeStyle : {}) }}
+                            onClick={() => setFarmData({ ...farmData, business_config: { ...farmData.business_config, shop_status: o.val } })}>
+                            {o.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '20px' }}>
+                    <button type="button" style={styles.primaryBtn} onClick={handleUpdateFarm}>Save Business Settings</button>
+                  </div>
+                </div>
+              )}
+            </section>
+          )
+        )}
+
+        {showProductModal && (
+          <div style={styles.modalOverlay}>
+            <form onSubmit={handleSaveProduct} style={styles.modalContent}>
+              <div style={styles.modalHeader}>
+                <div>
+                  <h3 style={styles.panelTitle}>{editingProductId ? 'Edit Product' : 'Add Product'}</h3>
+                  <p style={styles.rowSub}>{editingProductId ? 'Update this product across your public site.' : 'Add singles, bulk offers, or combo packs customers can request from the public website.'}</p>
+                </div>
+                <button type="button" style={styles.closeBtn} onClick={() => { resetProductForm(); setShowProductModal(false); }}>×</button>
+              </div>
+              <div style={{ ...styles.modalBody, gap: '16px' }}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Product / Offer Name</label>
+                  <input style={styles.input} required value={productForm.name} onChange={e => setProductForm({ ...productForm, name: e.target.value })} placeholder="e.g. Day-Old Chicks, 50-Bird Bulk Pack, Weekend Family Combo" />
+                </div>
+                <div style={styles.formRow}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Category / Offer Type</label>
+                    <select style={styles.select} value={productForm.category} onChange={e => setProductForm({ ...productForm, category: e.target.value })}>
+                      {productCategories.map(category => <option key={category} value={category}>{category}</option>)}
+                    </select>
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Price</label>
+                    <input
+                      style={{ ...styles.input, opacity: productForm.is_price_on_request ? 0.6 : 1 }}
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={productForm.price}
+                      disabled={productForm.is_price_on_request}
+                      onChange={e => setProductForm({ ...productForm, price: e.target.value })}
+                      placeholder={productForm.category === 'Bulk' || productForm.category === 'Combo' ? 'Optional for bulk/combo' : '85'}
+                    />
+                  </div>
+                </div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#fcfaf5', border: '1px solid #e5ddd0', borderRadius: '14px', padding: '14px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={productForm.is_price_on_request}
+                    onChange={e => setProductForm({ ...productForm, is_price_on_request: e.target.checked, price: e.target.checked ? '' : productForm.price })}
+                  />
+                  <span style={{ ...styles.rowSub, fontWeight: 800, color: '#183126' }}>Use quote pricing for bulk or combo requests</span>
+                </label>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Description / Combo Contents</label>
+                  <textarea
+                    style={{ ...styles.input, height: '90px', resize: 'none' }}
+                    value={productForm.description}
+                    onChange={e => setProductForm({ ...productForm, description: e.target.value })}
+                    placeholder={productForm.category === 'Combo' ? 'e.g. 10 cleaned chickens + 2 trays of eggs + delivery included.' : productForm.category === 'Bulk' ? 'e.g. Minimum 50 broilers. Best for resellers, events, and monthly supply.' : 'Short description customers will see.'}
+                  />
+                </div>
+                <div style={styles.formRow}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Stock Status</label>
+                    <select style={styles.select} value={productForm.stock_status} onChange={e => setProductForm({ ...productForm, stock_status: e.target.value })}>
+                      <option value="in_stock">In stock</option>
+                      <option value="low_stock">Low stock</option>
+                      <option value="out_of_stock">Out of stock</option>
+                    </select>
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Product Image</label>
+                    {productForm.image_url && !productImageFile && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                        <img src={productForm.image_url} alt="" style={{ width: '42px', height: '42px', borderRadius: '10px', objectFit: 'cover', border: '1px solid #e5ddd0' }} />
+                        <span style={styles.rowSub}>Current image</span>
+                      </div>
+                    )}
+                    <label style={{ ...styles.outlineBtn, cursor: 'pointer', textAlign: 'center' }}>
+                      {productImageFile ? productImageFile.name : (editingProductId ? 'Replace Image' : 'Upload Image')}
+                      <input type="file" hidden accept="image/*" onChange={e => setProductImageFile(e.target.files?.[0] || null)} />
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                {editingProductId && (
+                  <button type="button" style={{ ...styles.outlineBtn, color: '#b24134' }} onClick={() => {
+                    const product = inventory.find(item => item.id === editingProductId);
+                    if (product) setProductToDelete(product);
+                  }}>Delete</button>
+                )}
+                <button type="button" style={styles.outlineBtn} onClick={() => { resetProductForm(); setShowProductModal(false); }}>Cancel</button>
+                <button type="submit" style={styles.primaryBtnLarge} disabled={modalSaving}>{modalSaving ? 'Saving...' : (editingProductId ? 'Save Changes' : 'Save Product')}</button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {productToDelete && (
+          <div style={styles.modalOverlay}>
+            <div style={styles.modalContent}>
+              <div style={styles.modalHeader}>
+                <div>
+                  <h3 style={{ ...styles.panelTitle, color: '#b24134' }}>Delete Product?</h3>
+                  <p style={styles.rowSub}>This removes the product from inventory and the public products/order pages.</p>
+                </div>
+                <button type="button" style={styles.closeBtn} onClick={() => setProductToDelete(null)}>×</button>
+              </div>
+              <div style={{ background: '#fcfaf5', border: '1px solid #e5ddd0', borderRadius: '18px', padding: '18px', marginTop: '10px' }}>
+                <div style={styles.cardTitle}>{safeText(productToDelete.name, 'Product')}</div>
+                <div style={styles.rowSub}>Category: {safeText(productToDelete.category, 'Uncategorized')}</div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                <button type="button" style={styles.outlineBtn} onClick={() => setProductToDelete(null)}>Cancel</button>
+                <button type="button" style={{ ...styles.primaryBtnLarge, background: '#b24134' }} onClick={() => {
+                  handleDeleteProduct(productToDelete);
+                  if (editingProductId === productToDelete.id) {
+                    resetProductForm();
+                    setShowProductModal(false);
+                  }
+                }}>
+                  Delete Product
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showServiceModal && (
+          <div style={styles.modalOverlay}>
+            <form onSubmit={handleCreateService} style={styles.modalContent}>
+              <div style={styles.modalHeader}>
+                <div>
+                  <h3 style={styles.panelTitle}>Add Farm Service</h3>
+                  <p style={styles.rowSub}>Enter only the service name. It will appear as a bullet on the public Services page.</p>
+                </div>
+                <button type="button" style={styles.closeBtn} onClick={() => { resetServiceForm(); setShowServiceModal(false); }}>×</button>
+              </div>
+              <div style={{ ...styles.modalBody, gap: '16px' }}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Service Name</label>
+                  <input style={styles.input} required value={serviceForm.title} onChange={e => setServiceForm({ ...serviceForm, title: e.target.value })} placeholder="e.g. Local Delivery" />
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                <button type="button" style={styles.outlineBtn} onClick={() => { resetServiceForm(); setShowServiceModal(false); }}>Cancel</button>
+                <button type="submit" style={styles.primaryBtnLarge} disabled={modalSaving}>{modalSaving ? 'Saving...' : 'Save Service'}</button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {showGalleryModal && (
+          <div style={styles.modalOverlay}>
+            <form onSubmit={handleGalleryUpload} style={styles.modalContent}>
+              <div style={styles.modalHeader}>
+                <div>
+                  <h3 style={styles.panelTitle}>Upload Gallery Photo</h3>
+                  <p style={styles.rowSub}>Choose a real image file from your device.</p>
+                </div>
+                <button type="button" style={styles.closeBtn} onClick={() => { setGalleryImageFile(null); setShowGalleryModal(false); }}>×</button>
+              </div>
+              <label style={{ ...styles.outlineBtn, cursor: 'pointer', textAlign: 'center', padding: '24px', display: 'block' }}>
+                {galleryImageFile ? galleryImageFile.name : 'Choose Image File'}
+                <input type="file" hidden accept="image/*" onChange={e => setGalleryImageFile(e.target.files?.[0] || null)} />
+              </label>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                <button type="button" style={styles.outlineBtn} onClick={() => { setGalleryImageFile(null); setShowGalleryModal(false); }}>Cancel</button>
+                <button type="submit" style={styles.primaryBtnLarge} disabled={modalSaving || !galleryImageFile}>{modalSaving ? 'Uploading...' : 'Upload Photo'}</button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {showTestimonialModal && (
+          <div style={styles.modalOverlay}>
+            <form onSubmit={handleCreateTestimonial} style={styles.modalContent}>
+              <div style={styles.modalHeader}>
+                <div>
+                  <h3 style={styles.panelTitle}>Add Review</h3>
+                  <p style={styles.rowSub}>Publish customer feedback on the landing page.</p>
+                </div>
+                <button type="button" style={styles.closeBtn} onClick={() => { resetTestimonialForm(); setShowTestimonialModal(false); }}>×</button>
+              </div>
+              <div style={{ ...styles.modalBody, gap: '16px' }}>
+                <div style={styles.formRow}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Customer Name</label>
+                    <input style={styles.input} required value={testimonialForm.author_name} onChange={e => setTestimonialForm({ ...testimonialForm, author_name: e.target.value })} />
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Role</label>
+                    <input style={styles.input} value={testimonialForm.author_role} onChange={e => setTestimonialForm({ ...testimonialForm, author_role: e.target.value })} placeholder="Customer, reseller, grower" />
+                  </div>
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Quote</label>
+                  <textarea style={{ ...styles.input, height: '110px', resize: 'none' }} required value={testimonialForm.quote} onChange={e => setTestimonialForm({ ...testimonialForm, quote: e.target.value })} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                <button type="button" style={styles.outlineBtn} onClick={() => { resetTestimonialForm(); setShowTestimonialModal(false); }}>Cancel</button>
+                <button type="submit" style={styles.primaryBtnLarge} disabled={modalSaving}>{modalSaving ? 'Saving...' : 'Save Review'}</button>
+              </div>
+            </form>
           </div>
         )}
 
@@ -1255,6 +1858,11 @@ const styles = {
   inventoryCount: { fontSize: '24px', fontWeight: 900, color: '#183126' },
   customerGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '18px' },
   customerCard: { background: '#fcfbf8', border: '1px solid #e9e1d5', borderRadius: '22px', padding: '20px' },
+  settingsHubGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '18px' },
+  settingsHubCard: { border: '1px solid #e5ddd0', borderRadius: '24px', background: '#fcfaf5', padding: '24px', textAlign: 'left', cursor: 'pointer', display: 'grid', gap: '10px', boxShadow: '0 8px 20px rgba(0,0,0,0.03)' },
+  settingsHubKicker: { fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#8b6b2f' },
+  settingsHubTitle: { fontSize: '20px', fontWeight: 900, color: '#183126' },
+  settingsHubLink: { marginTop: '6px', fontSize: '13px', fontWeight: 800, color: '#1d4d35' },
   avatar: { width: '44px', height: '44px', borderRadius: '50%', background: '#1d4d35', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '18px', marginBottom: '12px' },
   cardTitle: { fontSize: '18px', fontWeight: 800, marginBottom: '4px' },
   saveStatus: { padding: '8px 16px', background: '#1d4d35', color: '#fff', borderRadius: '12px', fontSize: '11px', fontWeight: 800 },
