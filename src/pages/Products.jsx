@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
 import { getFarmProducts } from '../services/supabase';
 import { ShoppingCart, Search, Filter, AlertCircle, MessageCircle, ArrowRight } from 'lucide-react';
+import { phoneDigits, safeSlug, safeText } from '../utils/content';
 
 const Products = () => {
   const { farm } = useOutletContext();
@@ -9,6 +10,9 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('All');
   const contact = farm.contact_info || {};
+  const farmSlug = safeSlug(farm.slug, 'new-dawn');
+  const farmName = safeText(farm?.name, 'the farm');
+  const whatsappNumber = phoneDigits(contact.whatsapp || contact.phone);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -25,10 +29,13 @@ const Products = () => {
     fetchProducts();
   }, [farm.id]);
 
-  const categories = ['All', ...new Set(products.map(p => p.category))];
+  const categories = ['All', ...new Set(products.map(p => safeText(p.category, 'Other')))];
   const filteredProducts = filter === 'All' 
     ? products 
-    : products.filter(p => p.category === filter);
+    : products.filter(p => safeText(p.category, 'Other') === filter);
+  const displayPrice = (product) => (
+    product?.is_price_on_request || product?.price === null || product?.price === undefined ? 'Quote' : `R${product.price}`
+  );
 
   if (loading) return (
     <div className="h-screen w-full flex items-center justify-center bg-[#fcfaf5]">
@@ -75,7 +82,7 @@ const Products = () => {
                 <div className="relative h-80 overflow-hidden">
                   <img 
                     src={product.image_url || 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?auto=format&fit=crop&q=80&w=800'} 
-                    alt={product.name} 
+                    alt={safeText(product.name, 'Product')} 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                   <div className="absolute top-6 left-6">
@@ -86,25 +93,30 @@ const Products = () => {
                       {product.stock_status?.replace('_', ' ')}
                     </span>
                   </div>
+                  <div className="absolute top-6 right-6">
+                    <span className="px-4 py-2 text-[10px] tracking-widest font-black uppercase rounded-full shadow-lg bg-[#d6c27c] text-[#183126]">
+                      {safeText(product.category, 'Other')}
+                    </span>
+                  </div>
                 </div>
                 <div className="p-10">
                   <div className="flex justify-between items-start mb-6">
-                    <h3 className="text-3xl font-black text-[#183126] leading-tight">{product.name}</h3>
+                    <h3 className="text-3xl font-black text-[#183126] leading-tight">{safeText(product.name, 'Farm Product')}</h3>
                     <p className="font-black text-2xl text-[#1d4d35]">
-                      {product.is_price_on_request ? 'R??' : `R${product.price}`}
+                      {displayPrice(product)}
                     </p>
                   </div>
-                  <p className="text-[#5f6c65] mb-10 leading-relaxed font-medium text-lg h-[3em] overflow-hidden">{product.description}</p>
+                  <p className="text-[#5f6c65] mb-10 leading-relaxed font-medium text-lg h-[3em] overflow-hidden">{safeText(product.description, 'Fresh poultry product from the farm.')}</p>
                   
                   <div className="flex flex-col sm:flex-row items-center gap-4">
                     <Link 
-                      to={`/${farm.slug}/order?product=${product.id}`}
+                      to={`/${farmSlug}/order?product=${product.id}`}
                       className="w-full sm:w-auto px-10 py-5 bg-[#1d4d35] text-white font-black rounded-full hover:bg-[#153a28] flex-grow flex items-center justify-center gap-2 shadow-lg"
                     >
-                      Process Order <ArrowRight size={18} />
+                      {product.is_price_on_request ? 'Request Quote' : 'Process Order'} <ArrowRight size={18} />
                     </Link>
                     <a 
-                      href={`https://wa.me/${contact.whatsapp?.replace(/[^0-9]/g, '')}?text=Hi New Dawn, I'm interested in ${product.name}.`}
+                      href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hi ${farmName}, I'm interested in ${safeText(product.name, 'your poultry products')}.`)}`}
                       className="w-16 h-16 rounded-full bg-[#f5f0e6] text-[#1d4d35] flex items-center justify-center hover:bg-[#1d4d35] hover:text-white transition-all shadow-md border border-[#e6dfd1]"
                       target="_blank"
                       rel="noopener noreferrer"
@@ -138,11 +150,11 @@ const Products = () => {
             </p>
           </div>
           <div className="relative z-10 flex flex-col gap-4 w-full md:w-auto">
-            <Link to={`/${farm.slug}/services`} className="px-10 py-5 bg-white text-[#183126] font-black rounded-full shadow-xl hover:bg-gray-50 flex items-center justify-center gap-2">
+            <Link to={`/${farmSlug}/services`} className="px-10 py-5 bg-white text-[#183126] font-black rounded-full shadow-xl hover:bg-gray-50 flex items-center justify-center gap-2">
               View Wholesale Rates <ArrowRight size={20} />
             </Link>
             <a 
-              href={`https://wa.me/${contact.whatsapp?.replace(/[^0-9]/g, '')}?text=Hi, I'm interested in a bulk quote for my business/event.`}
+              href={`https://wa.me/${whatsappNumber}?text=Hi, I'm interested in a bulk quote for my business/event.`}
               className="px-10 py-5 bg-[#28c76f] text-white font-black rounded-full shadow-lg hover:bg-[#21a55c] flex items-center justify-center gap-2"
               target="_blank"
               rel="noopener noreferrer"

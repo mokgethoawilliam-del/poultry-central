@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
 import { 
   BarChart3, 
@@ -10,12 +10,17 @@ import {
   MessageCircle,
   HelpCircle
 } from 'lucide-react';
+import { phoneDigits, safeSlug, safeText } from '../utils/content';
+import { supabase } from '../services/supabase';
 
 const Services = () => {
   const { farm } = useOutletContext();
   const contact = farm.contact_info || {};
+  const farmSlug = safeSlug(farm.slug, 'new-dawn');
+  const farmName = safeText(farm?.name, 'the farm');
+  const [cmsServices, setCmsServices] = useState([]);
 
-  const services = [
+  const fallbackServices = [
     {
       title: 'Bulk Supply & Wholesale',
       desc: 'Consistent poultry supply for butcheries, retailers, and local businesses in Polokwane. We offer tiered pricing for bulk buyers.',
@@ -42,9 +47,29 @@ const Services = () => {
     }
   ];
 
+  useEffect(() => {
+    const fetchServices = async () => {
+      if (!farm?.id) return;
+      const { data, error } = await supabase
+        .from('farm_services')
+        .select('*')
+        .eq('farm_id', farm.id)
+        .eq('is_active', true)
+        .order('order_index');
+
+      if (!error) setCmsServices(data || []);
+    };
+
+    fetchServices();
+  }, [farm?.id]);
+
+  const serviceNames = cmsServices.length > 0
+    ? cmsServices.map(service => safeText(service.title)).filter(Boolean)
+    : [];
+
   const openWhatsApp = (service) => {
-    const msg = `Hi New Dawn, I'm interested in your ${service} service.`;
-    window.open(`https://wa.me/${contact.whatsapp?.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
+    const msg = `Hi ${farmName}, I'm interested in your ${service} service.`;
+    window.open(`https://wa.me/${phoneDigits(contact.whatsapp || contact.phone)}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
   return (
@@ -63,37 +88,50 @@ const Services = () => {
       </section>
 
       <div className="container mx-auto px-[5%] max-w-[1200px] py-24">
-        <div className="grid md:grid-cols-2 gap-10 mb-32">
-          {services.map((service, index) => (
-            <div key={index} className="bg-white p-10 md:p-14 rounded-[40px] shadow-sm border border-[#e6dfd1] hover:shadow-2xl hover:border-[#1d4d35] transition-all group relative overflow-hidden">
-              <div className="relative z-10">
-                <div className="w-16 h-16 rounded-2xl bg-[#fcfaf5] border border-[#e6dfd1] text-[#1d4d35] flex items-center justify-center mb-8 shadow-sm group-hover:scale-110 group-hover:bg-[#1d4d35] group-hover:text-white transition-all">
-                  {service.icon}
+        {serviceNames.length > 0 ? (
+          <div className="bg-white border border-[#e6dfd1] rounded-[32px] p-8 md:p-12 shadow-sm mb-32">
+            <h2 className="text-3xl md:text-5xl font-black text-[#183126] mb-8 tracking-tight">Available Services</h2>
+            <ul className="grid md:grid-cols-2 gap-5">
+              {serviceNames.map((service) => (
+                <li key={service} className="flex items-center gap-4 text-xl font-black text-[#183126]">
+                  <CheckCircle2 size={24} className="text-[#1d4d35] flex-shrink-0" />
+                  {service}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-10 mb-32">
+            {fallbackServices.map((service, index) => (
+              <div key={index} className="bg-white p-10 md:p-14 rounded-[40px] shadow-sm border border-[#e6dfd1] hover:shadow-2xl hover:border-[#1d4d35] transition-all group relative overflow-hidden">
+                <div className="relative z-10">
+                  <div className="w-16 h-16 rounded-2xl bg-[#fcfaf5] border border-[#e6dfd1] text-[#1d4d35] flex items-center justify-center mb-8 shadow-sm group-hover:scale-110 group-hover:bg-[#1d4d35] group-hover:text-white transition-all">
+                    {service.icon}
+                  </div>
+                  <h3 className="text-3xl font-black text-[#183126] mb-6 tracking-tight uppercase">{service.title}</h3>
+                  <p className="text-[#5f6c65] text-lg leading-relaxed mb-10 font-medium">
+                    {service.desc}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+                    {service.features.map((feature, i) => (
+                      <div key={i} className="flex items-center gap-3 text-[#183126] font-black text-sm uppercase tracking-wide">
+                        <CheckCircle2 size={18} className="text-[#d6c27c] flex-shrink-0" />
+                        {feature}
+                      </div>
+                    ))}
+                  </div>
+                  <button 
+                    onClick={() => openWhatsApp(service.title)}
+                    className="w-full sm:w-auto px-10 py-5 bg-[#1d4d35] text-white font-black rounded-full shadow-lg hover:bg-[#153a28] flex items-center justify-center gap-2 transition-all"
+                  >
+                    Enquire Now <ArrowRight size={18} />
+                  </button>
                 </div>
-                <h3 className="text-3xl font-black text-[#183126] mb-6 tracking-tight uppercase">{service.title}</h3>
-                <p className="text-[#5f6c65] text-lg leading-relaxed mb-10 font-medium">
-                  {service.desc}
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-                  {service.features.map((feature, i) => (
-                    <div key={i} className="flex items-center gap-3 text-[#183126] font-black text-sm uppercase tracking-wide">
-                      <CheckCircle2 size={18} className="text-[#d6c27c] flex-shrink-0" />
-                      {feature}
-                    </div>
-                  ))}
-                </div>
-                <button 
-                  onClick={() => openWhatsApp(service.title)}
-                  className="w-full sm:w-auto px-10 py-5 bg-[#1d4d35] text-white font-black rounded-full shadow-lg hover:bg-[#153a28] flex items-center justify-center gap-2 transition-all"
-                >
-                  Enquire Now <ArrowRight size={18} />
-                </button>
+                <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-[#1d4d35] opacity-[0.02] rounded-full pointer-events-none group-hover:opacity-5 transition-all"></div>
               </div>
-              {/* Accents */}
-              <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-[#1d4d35] opacity-[0.02] rounded-full pointer-events-none group-hover:opacity-5 transition-all"></div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Support Section */}
         <div className="bg-[#183126] p-12 md:p-24 rounded-[60px] text-white shadow-2xl relative overflow-hidden">
@@ -114,7 +152,7 @@ const Services = () => {
              </div>
              <div className="flex flex-col justify-center gap-6">
                 <a 
-                   href={`https://wa.me/${contact.whatsapp?.replace(/[^0-9]/g, '')}?text=Hi, I have a special service enquiry.`}
+                   href={`https://wa.me/${phoneDigits(contact.whatsapp || contact.phone)}?text=Hi, I have a special service enquiry.`}
                    className="px-12 py-5 bg-[#28c76f] text-white font-black text-xl rounded-full shadow-lg hover:bg-[#21a55c] transition-all flex items-center justify-center gap-3 text-center"
                    target="_blank"
                    rel="noopener noreferrer"
@@ -122,7 +160,7 @@ const Services = () => {
                    <MessageCircle size={24} /> Message us on WhatsApp
                 </a>
                 <Link 
-                   to={`/${farm.slug}/contact`}
+                   to={`/${farmSlug}/contact`}
                    className="px-12 py-5 bg-white text-[#183126] font-black text-xl rounded-full shadow-xl hover:bg-gray-50 transition-all text-center"
                 >
                    Contact Farm Team

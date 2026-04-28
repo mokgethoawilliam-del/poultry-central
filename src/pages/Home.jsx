@@ -1,352 +1,443 @@
-import React, { useState, useEffect } from "react";
-import { useOutletContext, Link } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useOutletContext } from "react-router-dom";
+import {
+  ArrowRight,
+  CheckCircle2,
+  ChevronDown,
+  Menu,
+  MessageCircle,
+  ShieldCheck,
+  ShoppingBasket,
+  Sprout,
+  Truck,
+  X,
+} from "lucide-react";
 import { getFarmProducts, getFarmTestimonials } from "../services/supabase";
+import heroImage from "../assets/premium_farm_hero_1776000531649.png";
+import broilerImage from "../assets/healthy_broiler_poultry_1776000591785.png";
+import eggsImage from "../assets/fresh_organic_eggs_1776000562761.png";
+import chicksImage from "../assets/media__1775999890077.png";
+import { phoneDigits, safeSlug, safeText } from "../utils/content";
 
-export default function NewDawnPoultryLanding() {
-  const { farm } = useOutletContext();
+const fallbackFarm = {
+  name: "The New Dawn Poultry Farm",
+  slug: "new-dawn",
+  primary_color: "#1d4d35",
+  site_title: "Fresh poultry in Polokwane",
+  hero_subtitle:
+    "Premium farm-raised poultry, fresh eggs, and day-old chicks supplied with care for families, resellers, and local events.",
+  why_content: "Fresh stock, straight answers, and reliable poultry supply for the community.",
+  about_story:
+    "New Dawn Poultry is built around clean stock, consistent service, and honest local trade. We help households, retailers, and growers source dependable poultry without the back-and-forth.",
+  about_headline: "Order, confirm, collect or deliver. Simple poultry supply for real local needs.",
+  contact_info: {
+    address: "Polokwane, Limpopo Province, South Africa",
+    phone: "015 004 0130",
+    whatsapp: "27150040130",
+  },
+};
+
+const fallbackProducts = [
+  {
+    title: "Live Broilers",
+    desc: "Healthy chickens prepared for households, retailers, and community events.",
+    image: broilerImage,
+    cta: "Order Broilers",
+  },
+  {
+    title: "Fresh Eggs",
+    desc: "Clean daily eggs packed for homes, shops, caterers, and bulk buyers.",
+    image: eggsImage,
+    cta: "Order Eggs",
+  },
+  {
+    title: "Day-Old Chicks",
+    desc: "Reliable starter stock for small farmers and poultry growers scaling up.",
+    image: chicksImage,
+    cta: "Book Chicks",
+  },
+];
+
+const fallbackTestimonials = [
+  {
+    id: "local-buyer",
+    quote: "Fresh stock, quick replies, and no confusion when we order for the family.",
+    author_name: "Mama Dlamini",
+    author_role: "Regular customer",
+  },
+  {
+    id: "grower",
+    quote: "Their chicks arrive healthy and the pickup process is easy to plan around.",
+    author_name: "Bongani M.",
+    author_role: "Poultry grower",
+  },
+];
+
+const trustBadges = [
+  { label: "Locally raised", icon: <ShieldCheck size={22} className="text-[#d6c27c]" /> },
+  { label: "Fresh daily", icon: <Sprout size={22} className="text-[#d6c27c]" /> },
+  { label: "Bulk ready", icon: <ShoppingBasket size={22} className="text-[#d6c27c]" /> },
+  { label: "Delivery support", icon: <Truck size={22} className="text-[#d6c27c]" /> },
+];
+
+const safeImage = (value, fallback) => {
+  const src = safeText(value);
+  return src && /^https?:\/\//.test(src) ? src : src || fallback;
+};
+
+export default function Home() {
+  const { farm: outletFarm } = useOutletContext();
+  const farm = useMemo(() => ({ ...fallbackFarm, ...outletFarm }), [outletFarm]);
+  const contact = { ...fallbackFarm.contact_info, ...(farm.contact_info || {}) };
+  const farmName = safeText(farm.name, fallbackFarm.name);
+  const farmSlug = safeSlug(farm.slug, fallbackFarm.slug);
+  const primaryColor = safeText(farm.primary_color, fallbackFarm.primary_color);
+  const whatsappNumber = phoneDigits(contact.whatsapp || contact.phone);
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [products, setProducts] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const contact = farm?.contact_info || {};
-  const whatsappNumber = contact.whatsapp?.replace(/[^0-9]/g, "") || "27150040130";
-  const farmName = farm?.name || "The New Dawn Poultry Farm";
-  const farmSlug = farm?.slug || "new-dawn";
-  const primaryColor = farm?.primary_color || "#1d4d35";
-
-  // Dynamic Styles
-  const primaryBg = { backgroundColor: primaryColor };
-  const primaryText = { color: primaryColor };
-  const primaryBorder = { borderColor: primaryColor };
-  const primaryBgHover = { backgroundColor: primaryColor, opacity: 0.9 };
 
   useEffect(() => {
-    const fetchData = async () => {
+    let mounted = true;
+
+    const fetchLandingData = async () => {
+      if (!farm.id) return;
+
       try {
-        const [prodData, testData] = await Promise.all([
+        const [productData, testimonialData] = await Promise.all([
           getFarmProducts(farm.id),
           getFarmTestimonials(farm.id),
         ]);
-        setProducts(prodData);
-        setTestimonials(testData);
+
+        if (!mounted) return;
+        setProducts(productData || []);
+        setTestimonials(testimonialData || []);
       } catch (err) {
         console.error("Home data fetch error:", err);
-      } finally {
-        setLoading(false);
       }
     };
-    if (farm?.id) fetchData();
-  }, [farm?.id]);
+
+    fetchLandingData();
+    return () => {
+      mounted = false;
+    };
+  }, [farm.id]);
+
+  const heroHeadline = safeText(farm.branding?.hero_headline, "Farm fresh poultry, ready for your table.");
+  const heroWords = heroHeadline.split(/[.,]/).map((part) => part.trim()).filter(Boolean);
 
   const displayProducts =
     products.length > 0
-      ? products.map((p) => ({
-          id: p.id,
-          title: p.name,
-          desc: p.description,
-          image:
-            p.image_url ||
-            "https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?auto=format&fit=crop&w=1200&q=80",
-          cta: `Order ${p.name}`,
-          price: p.price,
-          is_price_on_request: p.is_price_on_request,
+      ? products.slice(0, 3).map((product, index) => ({
+          id: product.id,
+          title: safeText(product.name, fallbackProducts[index]?.title || "Farm Product"),
+          desc: safeText(product.description, fallbackProducts[index]?.desc),
+          image: safeImage(product.image_url, fallbackProducts[index]?.image || broilerImage),
+          cta: `Order ${safeText(product.name, "Now")}`,
         }))
-      : [
-          {
-            title: "Live Chickens",
-            desc: "Healthy, farm-raised chickens available for households, resellers, and events.",
-            image: "https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?auto=format&fit=crop&w=1200&q=80",
-            cta: "Order Live Chickens",
-          },
-          {
-            title: "Fresh Eggs",
-            desc: "Clean, fresh eggs supplied daily for homes, shops, and bulk buyers.",
-            image: "https://images.unsplash.com/photo-1506976785307-8732e854ad03?auto=format&fit=crop&w=1200&q=80",
-            cta: "Order Fresh Eggs",
-          },
-          {
-            title: "Day-Old Chicks",
-            desc: "Reliable supply of chicks for farmers and poultry growers looking to scale.",
-            image: "https://images.unsplash.com/photo-1516467508483-a7212febe31a?auto=format&fit=crop&w=1200&q=80",
-            cta: "Order Day-Old Chicks",
-          },
-        ];
+      : fallbackProducts;
 
-  const displayTestimonials =
-    testimonials.length > 0 ? testimonials : [
-      { id: 1, quote: "The New Dawn Poultry Farm delivers fresh chickens right to our door. Best quality in Polokwane!", author_name: "Mama Dlamini", author_role: "Regular Customer" },
-      { id: 2, quote: "I've been ordering day-old chicks from them for 6 months. Always healthy, always on time.", author_name: "Bongani M.", author_role: "Poultry Farmer" },
-    ];
+  const displayTestimonials = testimonials.length > 0 ? testimonials.slice(0, 2) : fallbackTestimonials;
+
+  const navLinks = [
+    { label: "Products", to: `/${farmSlug}/products` },
+    { label: "Services", to: `/${farmSlug}/services` },
+    { label: "Gallery", to: `/${farmSlug}/gallery` },
+    { label: "About", href: "#about" },
+    { label: "Contact", to: `/${farmSlug}/contact` },
+  ];
 
   return (
-    <div className="font-sans text-gray-800 bg-white min-h-screen">
-      {/* Navbar - Exactly as user provided */}
-      <nav className="bg-white shadow-md sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {farm?.logo_url ? (
-              <img src={farm.logo_url} alt={farmName} className="h-10 w-auto object-contain" />
+    <div className="min-h-screen bg-[#fcfaf5] text-[#183126]">
+      <nav className="fixed inset-x-0 top-0 z-50 border-b border-white/20 bg-[#fcfaf5]/90 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-[1200px] items-center justify-between px-[5%] py-4">
+          <Link to={`/${farmSlug}`} className="flex min-w-0 items-center gap-3">
+            {safeText(farm.logo_url) ? (
+              <img
+                src={farm.logo_url}
+                alt={farmName}
+                className="h-11 w-11 shrink-0 rounded-2xl bg-white object-contain p-1 shadow-lg"
+              />
             ) : (
-              <div className="w-10 h-10 bg-green-700 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-inner">
+              <div
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg font-black text-white shadow-lg"
+                style={{ backgroundColor: primaryColor }}
+              >
                 {farmName.charAt(0)}
               </div>
             )}
-            <div>
-              <p className="text-xs text-green-700 font-bold uppercase tracking-widest leading-none mb-1">
-                {farmName}
-              </p>
-              <p className="text-[10px] text-gray-400 font-medium">{farm?.site_title || "Fresh poultry in Polokwane"}</p>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-black uppercase tracking-wide">{farmName}</p>
+              <p className="truncate text-xs font-bold text-[#6b756d]">{safeText(farm.site_title, fallbackFarm.site_title)}</p>
             </div>
+          </Link>
+
+          <div className="hidden items-center gap-8 lg:flex">
+            {navLinks.map((link) =>
+              link.to ? (
+                <Link key={link.label} to={link.to} className="text-sm font-black hover:text-[#1d4d35]">
+                  {link.label}
+                </Link>
+              ) : (
+                <a key={link.label} href={link.href} className="text-sm font-black hover:text-[#1d4d35]">
+                  {link.label}
+                </a>
+              )
+            )}
           </div>
 
-          <div className="hidden md:flex items-center gap-6 text-sm font-semibold text-gray-700">
-            <a href="#home" className="hover:text-green-700 transition-colors">Home</a>
-            <Link to={`/${farmSlug}/products`} className="hover:text-green-700 transition-colors">Products</Link>
-            <Link to={`/${farmSlug}/services`} className="hover:text-green-700 transition-colors">Farm Services</Link>
-            <a href="#about" className="hover:opacity-75 transition-colors" style={primaryText}>About</a>
-            <Link to={`/${farmSlug}/contact`} className="hover:opacity-75 transition-colors" style={primaryText}>Contact</Link>
-          </div>
-
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden items-center gap-3 md:flex">
             <a
               href={`https://wa.me/${whatsappNumber}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white px-5 py-2 rounded-full text-xs font-bold transition shadow-md"
-              style={primaryBg}
+              className="flex items-center gap-2 rounded-full border border-[#d8d0c1] bg-white px-5 py-3 text-sm font-black shadow-sm"
             >
-              WhatsApp Us
+              <MessageCircle size={18} />
+              WhatsApp
             </a>
             <Link
               to={`/${farmSlug}/order`}
-              className="bg-gray-800 text-white px-5 py-2 rounded-full text-xs font-bold hover:bg-black transition shadow-md"
+              className="flex items-center gap-2 rounded-full px-6 py-3 text-sm font-black text-white shadow-lg"
+              style={{ backgroundColor: primaryColor }}
             >
               Order Now
+              <ArrowRight size={18} />
             </Link>
           </div>
 
-          <button className="md:hidden text-gray-800 focus:outline-none" onClick={() => setMenuOpen(!menuOpen)}>
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {menuOpen ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /> : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />}
-            </svg>
+          <button
+            className="rounded-2xl border border-[#e6dfd1] bg-white p-3 text-[#183126] lg:hidden"
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-label="Toggle menu"
+          >
+            {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
 
         {menuOpen && (
-          <div className="md:hidden bg-white border-t px-4 py-6 flex flex-col gap-4 text-sm font-bold text-gray-800 animate-slideDown shadow-xl">
-             <a href="#home" onClick={() => setMenuOpen(false)}>Home</a>
-             <Link to={`/${farmSlug}/products`} onClick={() => setMenuOpen(false)}>Products</Link>
-             <Link to={`/${farmSlug}/services`} onClick={() => setMenuOpen(false)}>Farm Services</Link>
-             <a href="#about" onClick={() => setMenuOpen(false)}>About</a>
-             <Link to={`/${farmSlug}/contact`} onClick={() => setMenuOpen(false)}>Contact</Link>
-             <div className="flex flex-col gap-2 pt-2">
-                <a href={`https://wa.me/${whatsappNumber}`} className="bg-green-600 text-white py-3 rounded-full text-center shadow-lg">WhatsApp Us</a>
-                <Link to={`/${farmSlug}/order`} className="bg-gray-800 text-white py-3 rounded-full text-center shadow-lg" onClick={() => setMenuOpen(false)}>Order Now</Link>
-             </div>
+          <div className="border-t border-[#e6dfd1] bg-[#fcfaf5] px-[5%] py-5 shadow-xl lg:hidden">
+            <div className="flex flex-col gap-4">
+              {navLinks.map((link) =>
+                link.to ? (
+                  <Link key={link.label} to={link.to} onClick={() => setMenuOpen(false)} className="text-lg font-black">
+                    {link.label}
+                  </Link>
+                ) : (
+                  <a key={link.label} href={link.href} onClick={() => setMenuOpen(false)} className="text-lg font-black">
+                    {link.label}
+                  </a>
+                )
+              )}
+              <Link
+                to={`/${farmSlug}/order`}
+                onClick={() => setMenuOpen(false)}
+                className="rounded-full px-6 py-4 text-center font-black text-white"
+                style={{ backgroundColor: primaryColor }}
+              >
+                Order Now
+              </Link>
+            </div>
           </div>
         )}
       </nav>
 
-      {/* Hero Section - User provided design */}
-      <section id="home" className="relative pt-12 pb-20 md:pb-32 overflow-hidden bg-gray-50">
-        <div className="max-w-6xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center relative z-10">
-          <div>
-            <p className="font-bold uppercase tracking-widest text-sm mb-4 inline-block px-3 py-1 rounded-md" style={{ ...primaryText, backgroundColor: `${primaryColor}15` }}>
-               {farm?.site_title || "Fresh poultry in Polokwane"}
+      <section id="home" className="relative min-h-[92vh] overflow-hidden pt-24">
+        <div className="absolute inset-0">
+          <img src={safeImage(farm.hero_image_url, heroImage)} alt={farmName} className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#102419]/95 via-[#102419]/78 to-[#102419]/18" />
+        </div>
+
+        <div className="relative z-10 mx-auto grid min-h-[calc(92vh-6rem)] max-w-[1200px] items-center gap-12 px-[5%] py-16 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="max-w-3xl text-white">
+            <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-[#d6c27c] backdrop-blur">
+              <Sprout size={16} />
+              {safeText(farm.site_title, fallbackFarm.site_title)}
             </p>
-            <h1 className="text-5xl md:text-7xl font-black text-gray-900 leading-[1.1] mb-8 tracking-tight">
-               {farm?.branding?.hero_headline?.split('.').map((part, idx) => (
-                 <React.Fragment key={idx}>
-                    <span style={idx === 2 ? primaryText : { color: '#111' }}>{part}</span>
-                    <br />
-                 </React.Fragment>
-               )) || (
-                 <>
-                   Farm.
-                   <br />
-                   <span>Delivered</span>
-                   <br />
-                   <span style={primaryText}>to You.</span>
-                 </>
-               )}
+            <h1 className="text-5xl font-black leading-[1.02] tracking-tight md:text-7xl">
+              {heroWords.length >= 2 ? (
+                <>
+                  {heroWords[0]}
+                  <br />
+                  <span className="text-[#f5e8ad]">{heroWords.slice(1).join(" ")}</span>
+                </>
+              ) : (
+                heroHeadline
+              )}
             </h1>
-            <p className="text-gray-600 text-lg md:text-xl max-w-xl mb-10 leading-relaxed font-medium">
-               {farm?.branding?.hero_subtitle || "We supply fresh, farm-raised chickens and eggs daily across our region. From our gates straight to your kitchen."}
+            <p className="mt-8 max-w-2xl text-lg font-medium leading-relaxed text-[#e8eee9] md:text-xl">
+              {safeText(farm.branding?.hero_subtitle || farm.hero_subtitle, fallbackFarm.hero_subtitle)}
             </p>
-            <div className="flex flex-wrap gap-4 mb-10">
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
               <Link
                 to={`/${farmSlug}/order`}
-                className="text-white font-bold px-10 py-5 rounded-full text-lg transition shadow-xl hover:-translate-y-1 block"
-                style={primaryBg}
+                className="flex items-center justify-center gap-3 rounded-full bg-white px-8 py-5 text-base font-black text-[#183126] shadow-2xl transition hover:-translate-y-1"
               >
-                Order Now
+                Start an Order
+                <ArrowRight size={20} />
               </Link>
               <a
                 href={`https://wa.me/${whatsappNumber}`}
-                className="bg-white border-2 font-bold px-10 py-5 rounded-full text-lg transition shadow-lg hover:bg-gray-50 block"
-                style={{ ...primaryText, ...primaryBorder }}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-3 rounded-full border border-white/30 bg-white/10 px-8 py-5 text-base font-black text-white backdrop-blur transition hover:bg-white/20"
               >
-                WhatsApp Enquiries
+                <MessageCircle size={20} />
+                WhatsApp Enquiry
               </a>
             </div>
           </div>
 
-          <div className="relative">
-            {/* The Green Arch - From the screenshot logic */}
-            <div className="absolute -bottom-10 -left-10 w-96 h-48 bg-green-800/90 rounded-t-full hidden lg:block z-20 shadow-2xl backdrop-blur-sm border-t border-green-700/30"></div>
-            
-            <div className="rounded-[40px] overflow-hidden shadow-2xl h-[550px] relative">
-              <img
-                src={farm?.hero_image_url || "https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?auto=format&fit=crop&w=1200&q=80"}
-                alt={farm?.name}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
-              
-              <div className="absolute bottom-10 right-10 bg-white p-6 rounded-3xl shadow-2xl max-w-xs border border-gray-100 animate-fadeInScale">
-                <p className="font-bold text-xs uppercase tracking-widest mb-2" style={primaryText}>Fresh Quality</p>
-                <p className="text-gray-900 font-bold leading-snug">{farm?.why_content || "Locally raised chickens, fresh daily eggs, and specialized services."}</p>
+          <div className="hidden lg:block">
+            <div className="ml-auto max-w-sm rounded-[32px] border border-white/15 bg-white/12 p-6 text-white shadow-2xl backdrop-blur-xl">
+              <p className="text-xs font-black uppercase tracking-[0.25em] text-[#f5e8ad]">Why locals choose us</p>
+              <p className="mt-4 text-2xl font-black leading-tight">{safeText(farm.why_content, fallbackFarm.why_content)}</p>
+              <div className="mt-8 grid gap-4">
+                {["Fresh daily stock", "Bulk and retail orders", "Pickup or local delivery"].map((item) => (
+                  <div key={item} className="flex items-center gap-3 text-sm font-bold text-[#eef5ef]">
+                    <CheckCircle2 size={20} className="text-[#d6c27c]" />
+                    {item}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
+
+        <a
+          href="#products"
+          className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full bg-white/90 px-4 py-3 text-xs font-black uppercase tracking-widest text-[#183126] shadow-xl"
+        >
+          Explore
+          <ChevronDown size={16} />
+        </a>
       </section>
 
-      {/* Trust Badges */}
-      <section className="bg-gray-900 text-white py-12">
-        <div className="max-w-6xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-center text-sm font-bold uppercase tracking-[0.2em]">
-          <div className="flex flex-col gap-2">
-            <span className="text-green-500 text-2xl">✓</span>
-            Locally Raised
-          </div>
-          <div className="flex flex-col gap-2">
-            <span className="text-green-500 text-2xl">✓</span>
-            Fresh Daily
-          </div>
-          <div className="flex flex-col gap-2">
-            <span className="text-green-500 text-2xl">✓</span>
-            Bulk Available
-          </div>
-          <div className="flex flex-col gap-2">
-            <span className="text-green-500 text-2xl">✓</span>
-            Reliable Delivery
-          </div>
+      <section className="bg-[#183126] py-8 text-white">
+        <div className="mx-auto grid max-w-[1200px] grid-cols-2 gap-4 px-[5%] md:grid-cols-4">
+          {trustBadges.map((badge) => (
+            <div key={badge.label} className="flex items-center justify-center gap-3 text-center text-xs font-black uppercase tracking-[0.16em]">
+              {badge.icon}
+              {badge.label}
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Products - User code logic */}
-      <section id="products" className="py-24 bg-white">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-6 tracking-tight">Farm Highlights</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto text-lg leading-relaxed">Quality products raised with heart. Explore our fresh daily selections.</p>
+      <section id="products" className="bg-[#fcfaf5] py-24">
+        <div className="mx-auto max-w-[1200px] px-[5%]">
+          <div className="mb-14 flex flex-col justify-between gap-6 md:flex-row md:items-end">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.25em] text-[#8b6b2f]">Farm highlights</p>
+              <h2 className="mt-4 text-4xl font-black tracking-tight md:text-6xl">Order what is fresh now</h2>
+            </div>
+            <Link to={`/${farmSlug}/products`} className="flex items-center gap-2 text-sm font-black text-[#1d4d35]">
+              View all products
+              <ArrowRight size={18} />
+            </Link>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid gap-8 md:grid-cols-3">
             {displayProducts.map((product, index) => (
-              <div key={index} className="bg-gray-50 rounded-[40px] overflow-hidden border border-gray-100 hover:shadow-2xl transition duration-500 group">
-                <div className="h-64 overflow-hidden relative">
-                  <img src={product.image} alt={product.title} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
-                  <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity"></div>
+              <article key={product.id || product.title} className="overflow-hidden rounded-[32px] border border-[#e6dfd1] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+                <div className="aspect-[4/3] overflow-hidden">
+                  <img src={product.image} alt={product.title} className="h-full w-full object-cover transition duration-700 hover:scale-105" />
                 </div>
-                <div className="p-10">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4 tracking-tight">{product.title}</h3>
-                  <p className="text-gray-600 text-sm mb-8 leading-relaxed font-medium">{product.desc}</p>
+                <div className="p-8">
+                  <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#8b6b2f]">0{index + 1}</p>
+                  <h3 className="text-2xl font-black">{safeText(product.title, "Farm Product")}</h3>
+                  <p className="mt-4 min-h-[4.5rem] text-sm font-medium leading-relaxed text-[#5f6c65]">
+                    {safeText(product.desc, "Quality poultry product available from the farm.")}
+                  </p>
                   <Link
                     to={product.id ? `/${farmSlug}/order?product=${product.id}` : `/${farmSlug}/order`}
-                    className="block w-full bg-green-700 hover:bg-green-800 text-white font-bold py-4 rounded-full text-center transition shadow-lg group-hover:-translate-y-1"
+                    className="mt-8 flex items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-black text-white"
+                    style={{ backgroundColor: primaryColor }}
                   >
-                    {product.cta}
+                    {safeText(product.cta, "Order Now")}
+                    <ArrowRight size={18} />
                   </Link>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         </div>
       </section>
 
-      {/* About - Wired story */}
-      <section id="about" className="py-24 bg-gray-50 border-y border-gray-100 overflow-hidden">
-        <div className="max-w-6xl mx-auto px-4 grid md:grid-cols-2 gap-16 items-center">
-          <div className="relative">
-            <div className="absolute -top-10 -left-10 w-40 h-40 bg-green-100 rounded-full blur-3xl opacity-50"></div>
-            <div className="rounded-[40px] overflow-hidden shadow-2xl h-[500px]">
-              <img 
-                src={farm?.about_image_url || "https://images.unsplash.com/photo-1516467508483-a7212febe31a?auto=format&fit=crop&w=1200&q=80"} 
-                alt="Our Farm" 
-                className="w-full h-full object-cover" 
-              />
-            </div>
-            <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-green-700/10 rounded-full"></div>
+      <section id="about" className="bg-white py-24">
+        <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-[5%] lg:grid-cols-2">
+          <div className="overflow-hidden rounded-[36px]">
+            <img src={safeImage(farm.about_image_url, broilerImage)} alt="New Dawn poultry stock" className="h-full min-h-[420px] w-full object-cover" />
           </div>
           <div>
-            <p className="font-bold uppercase tracking-widest text-sm mb-6 inline-block px-3 py-1 rounded-md" style={{ ...primaryText, backgroundColor: `${primaryColor}15` }}>Our Story</p>
-            <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-8 tracking-tight italic leading-tight">Authentic farming, <br/>built on Trust.</h2>
-            <p className="text-gray-700 text-lg leading-relaxed mb-6 font-medium">
-               {farm?.about_story || "We believe good food starts with trust, consistency, and proper care. Our goal is to serve our community with quality poultry products that people can rely on for everyday meals, resale, and special events."}
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-[#8b6b2f]">Our story</p>
+            <h2 className="mt-4 text-4xl font-black leading-tight tracking-tight md:text-6xl">A cleaner way to buy local poultry</h2>
+            <p className="mt-8 text-lg font-medium leading-relaxed text-[#5f6c65]">
+              {safeText(farm.about_story, fallbackFarm.about_story)}
             </p>
-            <p className="text-gray-600 text-lg leading-relaxed font-medium">
-               {farm?.about_headline || "We serve families, retailers, and local businesses with the same dedication to freshness and reliability."}
+            <p className="mt-5 text-lg font-black leading-relaxed text-[#183126]">
+              {safeText(farm.about_headline, fallbackFarm.about_headline)}
             </p>
           </div>
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-24 bg-white">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-black text-gray-900 tracking-tight italic">Verified Feedback</h2>
+      <section className="bg-[#f5f0e6] py-24">
+        <div className="mx-auto max-w-[1200px] px-[5%]">
+          <div className="mb-12 text-center">
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-[#8b6b2f]">Verified feedback</p>
+            <h2 className="mt-4 text-4xl font-black tracking-tight md:text-5xl">What customers say</h2>
           </div>
-          <div className="grid md:grid-cols-2 gap-8">
-            {displayTestimonials.map((t) => (
-              <div key={t.id} className="bg-white p-12 rounded-[40px] shadow-sm border border-gray-100 hover:border-green-200 transition-colors">
-                <p className="text-gray-800 text-xl leading-relaxed italic mb-8 font-serif leading-relaxed font-medium">"{t.quote}"</p>
-                <div className="flex items-center gap-4 border-t border-gray-50 pt-8">
-                  <div className="w-12 h-12 bg-green-700 text-white rounded-2xl flex items-center justify-center font-black">
-                    {t.author_name.charAt(0)}
+          <div className="grid gap-8 md:grid-cols-2">
+            {displayTestimonials.map((testimonial) => (
+              <figure key={testimonial.id || testimonial.author_name} className="rounded-[32px] border border-[#e6dfd1] bg-white p-8 shadow-sm">
+                <blockquote className="text-xl font-bold leading-relaxed text-[#183126]">
+                  "{safeText(testimonial.quote, "Reliable service and fresh poultry.")}"
+                </blockquote>
+                <figcaption className="mt-8 flex items-center gap-4 border-t border-[#e6dfd1] pt-6">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1d4d35] font-black text-white">
+                    {safeText(testimonial.author_name, "C").charAt(0)}
                   </div>
                   <div>
-                    <h4 className="font-bold text-gray-900 tracking-tight uppercase text-sm">{t.author_name}</h4>
-                    <p className="text-[10px] text-green-700 font-bold uppercase tracking-widest leading-none mt-1">{t.author_role}</p>
+                    <p className="font-black">{safeText(testimonial.author_name, "Customer")}</p>
+                    <p className="text-xs font-black uppercase tracking-widest text-[#8b6b2f]">
+                      {safeText(testimonial.author_role, "Verified buyer")}
+                    </p>
                   </div>
-                </div>
-              </div>
+                </figcaption>
+              </figure>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-50 border-t border-gray-100 py-20">
-        <div className="max-w-6xl mx-auto px-4 grid md:grid-cols-12 gap-12">
-          <div className="md:col-span-5">
-            <p className="font-black text-2xl tracking-tighter mb-4 italic leading-none" style={primaryText}>{farmName}</p>
-            <p className="text-gray-500 text-sm max-w-sm font-medium leading-relaxed">
-               {farm?.footer_desc || `Quality poultry supply. We serve families, businesses, and community events with freshness and care.`}
+      <footer className="bg-[#102419] py-16 text-white">
+        <div className="mx-auto grid max-w-[1200px] gap-10 px-[5%] md:grid-cols-[1.2fr_0.8fr_1fr]">
+          <div>
+            <p className="text-2xl font-black">{farmName}</p>
+            <p className="mt-4 max-w-sm text-sm font-medium leading-relaxed text-[#c7d3ca]">
+              Quality poultry supply for homes, businesses, and community events.
             </p>
           </div>
-          <div className="md:col-span-3">
-             <h4 className="font-black text-gray-900 uppercase tracking-widest text-xs mb-6">Explore</h4>
-             <div className="flex flex-col gap-4 text-sm font-bold text-gray-500">
-                <Link to={`/${farmSlug}/products`} className="hover:text-green-700">All Products</Link>
-                <Link to={`/${farmSlug}/services`} className="hover:text-green-700">Farm Services</Link>
-                <Link to={`/${farmSlug}/contact`} className="hover:text-green-700">Contact Us</Link>
-             </div>
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-[#d6c27c]">Explore</p>
+            <div className="mt-5 flex flex-col gap-3 text-sm font-bold text-[#e8eee9]">
+              <Link to={`/${farmSlug}/products`}>Products</Link>
+              <Link to={`/${farmSlug}/services`}>Services</Link>
+              <Link to={`/${farmSlug}/order`}>Order</Link>
+            </div>
           </div>
-          <div className="md:col-span-4">
-             <h4 className="font-black text-gray-900 uppercase tracking-widest text-xs mb-6">Contact</h4>
-             <div className="flex flex-col gap-4 text-sm text-gray-600 font-medium">
-                <p>{contact.address || "Polokwane, Limpopo Province, SA"}</p>
-                <p>{contact.phone || "015 004 0130"}</p>
-                <a href={`https://wa.me/${whatsappNumber}`} className="text-green-700 font-black">WhatsApp Enquiry</a>
-             </div>
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-[#d6c27c]">Contact</p>
+            <div className="mt-5 flex flex-col gap-3 text-sm font-medium text-[#c7d3ca]">
+              <p>{safeText(contact.address, fallbackFarm.contact_info.address)}</p>
+              <p>{safeText(contact.phone, fallbackFarm.contact_info.phone)}</p>
+              <a href={`https://wa.me/${whatsappNumber}`} className="font-black text-white">
+                WhatsApp Enquiry
+              </a>
+            </div>
           </div>
-        </div>
-        <div className="max-w-6xl mx-auto px-4 pt-16 mt-16 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-bold text-gray-400 uppercase tracking-widest">
-           <p>© {new Date().getFullYear()} {farmName}. ALL RIGHTS RESERVED.</p>
-           <p className="flex gap-4"><span>KASI BUSINESS HUB</span> <span>POLOKWANE</span></p>
         </div>
       </footer>
     </div>

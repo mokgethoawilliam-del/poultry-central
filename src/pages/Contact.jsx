@@ -9,10 +9,12 @@ import {
   Mail,
   CheckCircle2
 } from 'lucide-react';
+import { phoneDigits, safeText } from '../utils/content';
 
 const Contact = () => {
   const { farm } = useOutletContext();
   const contact = farm.contact_info || {};
+  const farmName = safeText(farm?.name, 'our farm');
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e) => {
@@ -22,7 +24,7 @@ const Contact = () => {
   };
 
   const openWhatsApp = () => {
-    window.open(`https://wa.me/${contact.whatsapp?.replace(/[^0-9]/g, '')}`, '_blank');
+    window.open(`https://wa.me/${phoneDigits(contact.whatsapp || contact.phone)}`, '_blank');
   };
 
   if (submitted) return (
@@ -51,7 +53,7 @@ const Contact = () => {
     <div className="pt-24 bg-[#fcfaf5] min-h-screen">
        <section className="bg-[#1d4d35] pt-32 pb-24 text-white relative overflow-hidden">
         <div className="container mx-auto px-[5%] max-w-[1200px] relative z-10">
-          <span className="uppercase tracking-[0.3em] font-black text-[#d6c27c] mb-6 inline-block text-sm uppercase italic tracking-widest">Connect with our farm</span>
+          <span className="uppercase tracking-[0.3em] font-black text-[#d6c27c] mb-6 inline-block text-sm uppercase italic tracking-widest">Connect with {farmName}</span>
           <h1 className="text-5xl md:text-7xl font-black mb-6 tracking-tight">Get in <span className="text-[#fcfaf5] italic">Touch</span></h1>
           <p className="text-[#d3ddd7] text-xl max-w-2xl font-medium leading-relaxed">
             Reach out for product enquiries, bulk supply, advance bookings,
@@ -75,7 +77,7 @@ const Contact = () => {
                   </div>
                   <div>
                     <p className="font-black text-[#183126] text-lg uppercase tracking-tight mb-1">Our Location</p>
-                    <p className="text-[#5f6c65] font-medium leading-relaxed">{contact.address || 'Polokwane, Limpopo Province, SA'}</p>
+                    <p className="text-[#5f6c65] font-medium leading-relaxed">{safeText(contact.address, 'Polokwane, Limpopo Province, SA')}</p>
                   </div>
                 </div>
 
@@ -85,7 +87,7 @@ const Contact = () => {
                   </div>
                   <div>
                     <p className="font-black text-[#183126] text-lg uppercase tracking-tight mb-1">Business Hours</p>
-                    <p className="text-[#5f6c65] font-medium leading-relaxed">{contact.operating_hours || 'Mon - Sat: 08:00 - 17:00'}</p>
+                    <p className="text-[#5f6c65] font-medium leading-relaxed">{safeText(contact.operating_hours, 'Mon - Sat: 08:00 - 17:00')}</p>
                   </div>
                 </div>
 
@@ -95,9 +97,21 @@ const Contact = () => {
                   </div>
                   <div>
                     <p className="font-black text-[#183126] text-lg uppercase tracking-tight mb-1">Direct Line</p>
-                    <p className="text-[#5f6c65] font-medium leading-relaxed">{contact.phone || '015 004 0130'}</p>
+                    <p className="text-[#5f6c65] font-medium leading-relaxed">{safeText(contact.phone, '015 004 0130')}</p>
                   </div>
                 </div>
+
+                {safeText(contact.email) && (
+                  <div className="flex gap-6 items-start">
+                    <div className="w-14 h-14 bg-[#fcfaf5] rounded-2xl flex items-center justify-center text-[#1d4d35] flex-shrink-0 shadow-sm border border-[#e6dfd1]">
+                      <Mail size={24} />
+                    </div>
+                    <div>
+                      <p className="font-black text-[#183126] text-lg uppercase tracking-tight mb-1">Email</p>
+                      <p className="text-[#5f6c65] font-medium leading-relaxed">{safeText(contact.email)}</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
                <div className="pt-10 border-t border-[#e6dfd1]">

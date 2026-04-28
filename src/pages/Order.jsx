@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useOutletContext, useSearchParams, useNavigate } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { 
   ShoppingBag, 
@@ -11,12 +11,13 @@ import {
   ArrowRight,
   Info
 } from 'lucide-react';
+import { phoneDigits, safeText } from '../utils/content';
 
 const Order = () => {
   const { farm } = useOutletContext();
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const productId = searchParams.get('product');
+  const farmName = safeText(farm?.name, 'the farm');
   
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +59,7 @@ const Order = () => {
 
   const fetchActiveOrder = async (orderId) => {
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('orders')
         .select('*, order_items(*, products(*))')
         .eq('id', orderId)
@@ -103,7 +104,8 @@ const Order = () => {
     
     try {
       const selectedProduct = products.find(p => p.id === formData.product_id);
-      const totalPrice = (selectedProduct?.price || 0) * formData.quantity;
+      const isQuoteOrder = selectedProduct?.is_price_on_request || selectedProduct?.price === null || selectedProduct?.price === undefined;
+      const totalPrice = isQuoteOrder ? 0 : (selectedProduct?.price || 0) * formData.quantity;
       const orderNumber = `ORD-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
       const { data: order, error } = await supabase.from('orders').insert({
@@ -126,7 +128,7 @@ const Order = () => {
         order_id: order.id,
         product_id: formData.product_id,
         quantity: formData.quantity,
-        price_at_time: selectedProduct?.price || 0
+        price_at_time: isQuoteOrder ? 0 : (selectedProduct?.price || 0)
       });
 
       localStorage.setItem(`active_order_${farm.id}`, order.id);
@@ -144,8 +146,9 @@ const Order = () => {
 
   const openWhatsApp = () => {
     const contact = farm.contact_info || {};
-    const msg = `Hi New Dawn, I've just placed an order (or would like to) for ${products.find(p => p.id === formData.product_id)?.name}. My name is ${formData.customer_name}.`;
-    window.open(`https://wa.me/${contact.whatsapp?.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
+    const productName = safeText(products.find(p => p.id === formData.product_id)?.name, 'your poultry products');
+    const msg = `Hi ${farmName}, I've just placed an order (or would like to) for ${productName}. My name is ${formData.customer_name}.`;
+    window.open(`https://wa.me/${phoneDigits(contact.whatsapp || contact.phone)}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
   if (loading) return (
@@ -234,6 +237,9 @@ const Order = () => {
   );
 
   const selectedProduct = products.find(p => p.id === formData.product_id);
+  const isQuoteProduct = Boolean(selectedProduct && (selectedProduct.is_price_on_request || selectedProduct.price === null || selectedProduct.price === undefined));
+  const selectedProductPrice = selectedProduct ? (isQuoteProduct ? 'Quote' : `R${selectedProduct.price || 0}`) : '---';
+  const estimatedTotal = selectedProduct ? (isQuoteProduct ? 'Quote' : `R${(selectedProduct.price || 0) * formData.quantity}`) : '---';
 
   return (
     <div className="pt-24 bg-[#fcfaf5] min-h-screen">
@@ -286,7 +292,9 @@ const Order = () => {
                     >
                       <option value="">Choose a product...</option>
                       {products.map(p => (
-                        <option key={p.id} value={p.id}>{p.name} - R{p.price}</option>
+                        <option key={p.id} value={p.id}>
+                          {safeText(p.name, 'Farm Product')} - {p.is_price_on_request || p.price === null || p.price === undefined ? 'Quote' : `R${p.price}`}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -364,7 +372,7 @@ const Order = () => {
                 <div className="space-y-6 mb-10">
                   <div className="flex justify-between items-center">
                     <span className="text-[#d3ddd7] font-bold">Product</span>
-                    <span className="font-black">{selectedProduct?.name || '---'}</span>
+                    <span className="font-black">{safeText(selectedProduct?.name, '---')}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-[#d3ddd7] font-bold">Quantity</span>
@@ -372,12 +380,12 @@ const Order = () => {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-[#d3ddd7] font-bold">Price</span>
-                    <span className="font-black">R{selectedProduct?.price || 0}</span>
+                    <span className="font-black">{selectedProductPrice}</span>
                   </div>
                 </div>
                 <div className="flex justify-between items-center border-t border-white/10 pt-8 mt-10">
                   <span className="text-xl font-black text-[#d6c27c]">Estimated Total</span>
-                  <span className="text-3xl font-black">R{(selectedProduct?.price || 0) * formData.quantity}</span>
+                  <span className="text-3xl font-black">{estimatedTotal}</span>
                 </div>
                 {/* Pattern */}
                 <div className="absolute inset-0 bg-organic opacity-5 pointer-events-none"></div>
