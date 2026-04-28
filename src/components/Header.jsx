@@ -10,6 +10,8 @@ const Header = ({ farm }) => {
   const contact = farm?.contact_info || {};
   const farmName = safeText(farm?.name, 'New Dawn Poultry');
   const farmSlug = safeSlug(farm?.slug, 'new-dawn');
+  const siteTitle = safeText(farm?.site_title, 'Fresh poultry, eggs, and farm supply');
+  const isHomePage = location.pathname === `/${farmSlug}` || location.pathname === `/${farmSlug}/`;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -59,7 +61,7 @@ const Header = ({ farm }) => {
                 {farmName}
               </span>
               <span className="text-[11px] md:text-xs text-[#6b756d] font-medium">
-                Fresh poultry in Polokwane
+                {siteTitle}
               </span>
             </div>
           </Link>
@@ -67,15 +69,25 @@ const Header = ({ farm }) => {
           {/* Desktop Nav */}
           <nav className="hidden lg:flex items-center gap-8">
             {navLinks.map((link) => (
-              <a
-                key={link.name}
-                href={link.path.startsWith('/') && link.path === `/${farmSlug}` ? '#home' : link.path}
-                className={`text-[15px] font-bold transition-all hover:text-[#1d4d35] ${
-                  location.pathname === link.path ? 'text-[#1d4d35]' : 'text-[#183126]'
-                }`}
-              >
-                {link.name}
-              </a>
+              link.name === 'Home' && isHomePage ? (
+                <a
+                  key={link.name}
+                  href="#home"
+                  className="text-[15px] font-bold transition-all hover:text-[#1d4d35] text-[#183126]"
+                >
+                  {link.name}
+                </a>
+              ) : (
+                <Link
+                  key={link.name}
+                  to={link.path}
+                  className={`text-[15px] font-bold transition-all hover:text-[#1d4d35] ${
+                    location.pathname === link.path ? 'text-[#1d4d35]' : 'text-[#183126]'
+                  }`}
+                >
+                  {link.name}
+                </Link>
+              )
             ))}
           </nav>
 

@@ -18,6 +18,7 @@ import broilerImage from "../assets/healthy_broiler_poultry_1776000591785.png";
 import eggsImage from "../assets/fresh_organic_eggs_1776000562761.png";
 import chicksImage from "../assets/media__1775999890077.png";
 import { phoneDigits, safeSlug, safeText } from "../utils/content";
+import StorefrontLegalModal from "../components/StorefrontLegalModal";
 
 const fallbackFarm = {
   name: "The New Dawn Poultry Farm",
@@ -97,6 +98,7 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [products, setProducts] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
+  const [legalView, setLegalView] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -433,13 +435,41 @@ export default function Home() {
             <div className="mt-5 flex flex-col gap-3 text-sm font-medium text-[#c7d3ca]">
               <p>{safeText(contact.address, fallbackFarm.contact_info.address)}</p>
               <p>{safeText(contact.phone, fallbackFarm.contact_info.phone)}</p>
+              {safeText(contact.email) && <p>{safeText(contact.email)}</p>}
               <a href={`https://wa.me/${whatsappNumber}`} className="font-black text-white">
                 WhatsApp Enquiry
               </a>
             </div>
           </div>
         </div>
+        <div className="mx-auto mt-12 flex max-w-[1200px] flex-col gap-4 border-t border-white/10 px-[5%] pt-8 text-sm text-[#c7d3ca] md:flex-row md:items-center md:justify-between">
+          <p>&copy; {new Date().getFullYear()} {farmName}. Powered by Poultry Central.</p>
+          <div className="flex flex-wrap gap-6">
+            <button type="button" onClick={() => setLegalView('terms')} className="font-bold text-white">Terms & Conditions</button>
+            <button type="button" onClick={() => setLegalView('privacy')} className="font-bold text-white">Privacy Policy</button>
+          </div>
+        </div>
       </footer>
+
+      {legalView === 'terms' && (
+        <StorefrontLegalModal title="Terms & Conditions" businessName={farmName} onClose={() => setLegalView(null)}>
+          <p><strong>{farmName}</strong> manages the products, pricing, availability, order fulfilment, delivery promises, and customer service shown on this storefront.</p>
+          <p className="mt-4">Orders placed through this site are treated as requests until the farm confirms stock, collection timing, or delivery details. Bulk or quote-based listings may require direct confirmation before payment or dispatch.</p>
+          <p className="mt-4">Customers should provide accurate contact, order, and delivery details. Incorrect details may delay fulfilment or require the farm to contact the customer again before processing.</p>
+          <p className="mt-4">Delivery areas, delivery times, payment handling, substitutions, and cancellation decisions remain subject to the farm’s operating rules and product availability.</p>
+          <p className="mt-4">Poultry Central provides the software storefront and admin tools, but product responsibility and day-to-day trade remain with {farmName}.</p>
+        </StorefrontLegalModal>
+      )}
+
+      {legalView === 'privacy' && (
+        <StorefrontLegalModal title="Privacy Policy" businessName={farmName} onClose={() => setLegalView(null)}>
+          <p><strong>{farmName}</strong> collects customer information needed to respond to enquiries, process orders, arrange collection or delivery, and provide support.</p>
+          <p className="mt-4">This may include customer names, phone numbers, email addresses, delivery details, and order notes submitted through the storefront.</p>
+          <p className="mt-4">Poultry Central and Kasi Business Hub power the storefront platform and may process this information as a technology provider so the site and order tools can function correctly.</p>
+          <p className="mt-4">Customer information should only be used for legitimate business communication, order processing, and service follow-up. It should not be sold or misused for unrelated marketing.</p>
+          <p className="mt-4">If a customer wants their submitted information corrected or removed, they should contact {farmName} directly using the contact details shown on this storefront.</p>
+        </StorefrontLegalModal>
+      )}
     </div>
   );
 }

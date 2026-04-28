@@ -1395,6 +1395,16 @@ const Dashboard = () => {
                       <input style={styles.input} value={safeText(farmData?.contact_info?.address)} onChange={e => setFarmData({ ...farmData, contact_info: { ...farmData.contact_info, address: e.target.value } })} />
                     </div>
                   </div>
+                  <div style={styles.formRow}>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Contact Email</label>
+                      <input style={styles.input} value={safeText(farmData?.contact_info?.email)} onChange={e => setFarmData({ ...farmData, contact_info: { ...farmData.contact_info, email: e.target.value } })} />
+                    </div>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Operating Hours</label>
+                      <input style={styles.input} value={safeText(farmData?.contact_info?.operating_hours)} onChange={e => setFarmData({ ...farmData, contact_info: { ...farmData.contact_info, operating_hours: e.target.value } })} placeholder="Mon - Sat: 08:00 - 17:00" />
+                    </div>
+                  </div>
                   <div style={{ borderTop: '1px solid #e5ddd0', paddingTop: '30px', display: 'flex', justifyContent: 'flex-end' }}>
                     <button type="submit" style={styles.primaryBtnLarge}>
                       <Save size={18} style={{ marginRight: '8px' }} /> Save Brand Changes
