@@ -9,6 +9,9 @@ Return only valid JSON with these fields:
 - hero_subtitle
 - why_content
 - about_story
+- hero_image_prompt
+- about_image_prompt
+- gallery_image_prompt
 
 Rules:
 - Keep the voice practical, warm, and business-ready.
@@ -20,6 +23,8 @@ Rules:
 - Keep why_content under 24 words.
 - Keep hero_subtitle under 40 words.
 - Keep about_story under 95 words.
+- Keep each image prompt under 45 words.
+- Image prompts should describe real, photographable poultry business scenes.
 `.trim();
 
 export default async function handler(req, res) {
@@ -51,6 +56,11 @@ Business context:
 
 Task:
 ${String(prompt).trim()}
+
+Also suggest:
+- one hero image prompt
+- one about-section image prompt
+- one gallery image prompt
 `.trim();
 
     const response = await fetch(`${DEFAULT_BASE_URL}/chat/completions`, {
@@ -91,6 +101,9 @@ ${String(prompt).trim()}
         hero_subtitle: parsed.hero_subtitle || '',
         why_content: parsed.why_content || '',
         about_story: parsed.about_story || '',
+        hero_image_prompt: parsed.hero_image_prompt || '',
+        about_image_prompt: parsed.about_image_prompt || '',
+        gallery_image_prompt: parsed.gallery_image_prompt || '',
       },
     });
   } catch (error) {

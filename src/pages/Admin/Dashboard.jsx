@@ -65,6 +65,11 @@ const Dashboard = () => {
   const [cmsCopilotLoading, setCmsCopilotLoading] = useState(false);
   const [cmsCopilotError, setCmsCopilotError] = useState('');
   const [cmsCopilotDraft, setCmsCopilotDraft] = useState(null);
+  const [cmsCopilotHistory, setCmsCopilotHistory] = useState([]);
+  const [opsAiPrompt, setOpsAiPrompt] = useState('');
+  const [opsAiLoading, setOpsAiLoading] = useState(false);
+  const [opsAiError, setOpsAiError] = useState('');
+  const [opsAiResult, setOpsAiResult] = useState(null);
   const [showProductModal, setShowProductModal] = useState(false);
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
@@ -92,6 +97,7 @@ const Dashboard = () => {
   });
   const farmName = safeText(farmData?.name, 'The New Dawn');
   const farmSlug = safeSlug(farmData?.slug, 'new-dawn');
+  const cmsHistoryKey = farmData?.id ? `poultry_cms_copilot_history_${farmData.id}` : null;
   const pageTitleMap = {
     Overview: 'Overview',
     LiveOrders: 'Live Order Board',
@@ -99,6 +105,7 @@ const Dashboard = () => {
     Inventory: 'Inventory',
     FarmServices: 'Farm Services',
     Customers: 'Customers',
+    AIManager: 'AI Manager',
     'Site Editor': 'CMS Settings',
     Testimonials: 'Testimonials',
     Settings: 'Platform Settings',
@@ -241,6 +248,25 @@ const Dashboard = () => {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  useEffect(() => {
+    if (!cmsHistoryKey) return;
+    try {
+      const raw = window.localStorage.getItem(cmsHistoryKey);
+      setCmsCopilotHistory(raw ? JSON.parse(raw) : []);
+    } catch {
+      setCmsCopilotHistory([]);
+    }
+  }, [cmsHistoryKey]);
+
+  useEffect(() => {
+    if (!cmsHistoryKey) return;
+    try {
+      window.localStorage.setItem(cmsHistoryKey, JSON.stringify(cmsCopilotHistory.slice(0, 6)));
+    } catch {
+      // ignore local persistence errors
+    }
+  }, [cmsCopilotHistory, cmsHistoryKey]);
 
   const handleUpdateFarm = async (e) => {
     e?.preventDefault();
@@ -488,6 +514,15 @@ const Dashboard = () => {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload?.error || 'Could not generate CMS draft right now.');
       setCmsCopilotDraft(payload.draft || null);
+      if (payload.draft) {
+        const nextEntry = {
+          id: `${Date.now()}`,
+          created_at: new Date().toISOString(),
+          prompt: cmsCopilotPrompt,
+          draft: payload.draft,
+        };
+        setCmsCopilotHistory((current) => [nextEntry, ...current].slice(0, 6));
+      }
     } catch (err) {
       setCmsCopilotError(err.message || 'Could not generate CMS draft right now.');
     } finally {
@@ -511,6 +546,64 @@ const Dashboard = () => {
     }));
     setSaveStatus('CMS draft applied');
     setTimeout(() => setSaveStatus(''), 2000);
+  };
+
+  const restoreCmsDraftFromHistory = (entry) => {
+    if (!entry?.draft) return;
+    setCmsCopilotPrompt(entry.prompt || '');
+    setCmsCopilotDraft(entry.draft);
+    setCmsCopilotError('');
+  };
+
+  const handleGenerateOpsBrief = async (e) => {
+    e?.preventDefault();
+    if (!farmData?.id) return;
+
+    setOpsAiLoading(true);
+    setOpsAiError('');
+
+    try {
+      const response = await fetch('/api/farm-ops-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: opsAiPrompt,
+          farm: {
+            name: farmName,
+            site_title: safeText(farmData?.site_title),
+            low_stock: stats.lowStock,
+            today_orders: stats.todayOrders,
+            pending_orders: stats.pendingOrders,
+            total_revenue: stats.weeklyRevenue,
+            inventory_count: inventory.length,
+            active_products: inventory.filter(item => item.is_active !== false).length,
+            services_count: farmServices.length,
+            customers_count: customers.length,
+            recent_orders: orders.slice(0, 8).map(order => ({
+              order_number: order.order_number,
+              status: order.status,
+              customer_name: order.customer_name,
+              total_price: order.total_price,
+              fulfillment_method: order.fulfillment_method,
+            })),
+            inventory_snapshot: inventory.slice(0, 10).map(item => ({
+              name: item.name,
+              stock_status: item.stock_status,
+              price: item.price,
+              category: item.category,
+            })),
+          },
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error || 'Could not generate farm operations guidance right now.');
+      setOpsAiResult(payload.result || null);
+    } catch (err) {
+      setOpsAiError(err.message || 'Could not generate farm operations guidance right now.');
+    } finally {
+      setOpsAiLoading(false);
+    }
   };
 
   const resetTestimonialForm = () => {
@@ -925,6 +1018,7 @@ const Dashboard = () => {
             { id: 'Inventory', icon: <Package size={18} />, label: 'Inventory' },
             { id: 'FarmServices', icon: <Truck size={18} />, label: 'Farm Services' },
             { id: 'Customers', icon: <Users size={18} />, label: 'Customers' },
+            { id: 'AIManager', icon: <Sparkles size={18} />, label: 'AI Manager' },
             { id: 'Site Editor', icon: <Layout size={18} />, label: 'CMS Settings' },
             { id: 'Testimonials', icon: <MessageSquare size={18} />, label: 'Testimonials' },
             { id: 'Settings', icon: <Settings size={18} />, label: 'Settings' },
@@ -1073,6 +1167,9 @@ const Dashboard = () => {
                   <button style={{ ...styles.outlineBtn, padding: '14px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }} onClick={() => setActiveTab('Inventory')}>
                     <Package size={18} /> Manage Stock
                   </button>
+                  <button style={{ ...styles.outlineBtn, padding: '14px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }} onClick={() => setActiveTab('AIManager')}>
+                    <Sparkles size={18} /> Ask AI Manager
+                  </button>
                   <button style={{ ...styles.outlineBtn, padding: '14px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }} onClick={() => { setShowVault(true); }}>
                     <Lock size={18} /> Security Vault
                   </button>
@@ -1083,6 +1180,117 @@ const Dashboard = () => {
         )}
 
         {/* ── LIVE ORDER BOARD ──────────────────────────────── */}
+        {activeTab === 'AIManager' && (
+          <div style={{ display: 'grid', gap: '22px' }}>
+            <section style={styles.panel}>
+              <div style={styles.panelHead}>
+                <div>
+                  <h3 style={styles.panelTitle}>Farm AI Manager</h3>
+                  <p style={styles.rowSub}>Ask for grounded operational advice using your real orders, stock picture, and recent farm activity.</p>
+                </div>
+              </div>
+              <div style={styles.settingsHubGrid}>
+                {[
+                  'What should I focus on today?',
+                  'Which orders need attention first?',
+                  'What is my stock risk right now?',
+                  'Summarize my farm performance this week.',
+                ].map((idea) => (
+                  <button key={idea} type="button" style={styles.settingsHubCard} onClick={() => setOpsAiPrompt(idea)}>
+                    <div style={styles.settingsHubKicker}>Suggested Ask</div>
+                    <div style={styles.settingsHubTitle}>"{idea}"</div>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section style={styles.panel}>
+              <form onSubmit={handleGenerateOpsBrief} style={{ display: 'grid', gap: '16px' }}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Ask AI Manager</label>
+                  <textarea
+                    style={{ ...styles.input, height: '130px', resize: 'none' }}
+                    value={opsAiPrompt}
+                    onChange={e => setOpsAiPrompt(e.target.value)}
+                    placeholder="Example: Give me a practical action plan for pending orders, low stock, and what to push on the storefront this week."
+                  />
+                </div>
+                {opsAiError && (
+                  <div style={{ ...styles.customerCard, borderColor: '#f2c9c2', background: '#fff5f3', color: '#8c3a2e' }}>
+                    {opsAiError}
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button type="submit" style={styles.primaryBtnLarge} disabled={opsAiLoading}>
+                    {opsAiLoading ? <><Loader2 size={18} style={{ marginRight: '8px' }} /> Thinking...</> : <><Sparkles size={18} style={{ marginRight: '8px' }} /> Generate Guidance</>}
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            <section style={styles.panel}>
+              <div style={styles.panelHead}>
+                <div>
+                  <h3 style={styles.panelTitle}>Current Farm Snapshot</h3>
+                  <p style={styles.rowSub}>The AI manager reads from this live business picture when preparing guidance.</p>
+                </div>
+              </div>
+              <div style={styles.statsGrid}>
+                <div style={styles.statCard}>
+                  <div style={styles.statLabel}>Today's Orders</div>
+                  <div style={styles.statValue}>{stats.todayOrders}</div>
+                </div>
+                <div style={styles.statCard}>
+                  <div style={styles.statLabel}>Pending Orders</div>
+                  <div style={styles.statValue}>{stats.pendingOrders}</div>
+                </div>
+                <div style={styles.statCard}>
+                  <div style={styles.statLabel}>Low Stock Items</div>
+                  <div style={{ ...styles.statValue, color: stats.lowStock > 0 ? '#dc2626' : '#1d4d35' }}>{stats.lowStock}</div>
+                </div>
+                <div style={styles.statCard}>
+                  <div style={styles.statLabel}>Revenue Tracked</div>
+                  <div style={{ ...styles.statValue, color: '#1d4d35' }}>R{stats.weeklyRevenue.toLocaleString()}</div>
+                </div>
+              </div>
+            </section>
+
+            {opsAiResult && (
+              <section style={styles.panel}>
+                <div style={styles.panelHead}>
+                  <div>
+                    <h3 style={styles.panelTitle}>{safeText(opsAiResult.headline, 'AI Manager Summary')}</h3>
+                    <p style={styles.rowSub}>Grounded guidance based on your current farm data.</p>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gap: '18px' }}>
+                  <div style={styles.copilotDraftBox}>{safeText(opsAiResult.summary, '-')}</div>
+                  <div style={styles.formRow}>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Priority Risks</label>
+                      <div style={{ display: 'grid', gap: '10px' }}>
+                        {(opsAiResult.risks || []).map((risk, index) => (
+                          <div key={`${risk}-${index}`} style={styles.copilotDraftBox}>{risk}</div>
+                        ))}
+                        {(!opsAiResult.risks || opsAiResult.risks.length === 0) && <div style={styles.copilotDraftBox}>No immediate risks flagged.</div>}
+                      </div>
+                    </div>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Recommended Actions</label>
+                      <div style={{ display: 'grid', gap: '10px' }}>
+                        {(opsAiResult.actions || []).map((action, index) => (
+                          <div key={`${action}-${index}`} style={styles.copilotDraftBox}>{action}</div>
+                        ))}
+                        {(!opsAiResult.actions || opsAiResult.actions.length === 0) && <div style={styles.copilotDraftBox}>No actions returned yet.</div>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+          </div>
+        )}
+
         {activeTab === 'LiveOrders' && (
           <div>
             {/* Controls */}
@@ -1590,6 +1798,54 @@ const Dashboard = () => {
                           <label style={styles.label}>About Story</label>
                           <div style={styles.copilotDraftBox}>{safeText(cmsCopilotDraft.about_story, '-')}</div>
                         </div>
+                        <div style={styles.formGroup}>
+                          <label style={styles.label}>Hero Image Prompt</label>
+                          <div style={styles.copilotDraftBox}>{safeText(cmsCopilotDraft.hero_image_prompt, '-')}</div>
+                        </div>
+                        <div style={styles.formGroup}>
+                          <label style={styles.label}>About Image Prompt</label>
+                          <div style={styles.copilotDraftBox}>{safeText(cmsCopilotDraft.about_image_prompt, '-')}</div>
+                        </div>
+                        <div style={styles.formGroup}>
+                          <label style={styles.label}>Gallery Image Prompt</label>
+                          <div style={styles.copilotDraftBox}>{safeText(cmsCopilotDraft.gallery_image_prompt, '-')}</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {cmsCopilotHistory.length > 0 && (
+                    <div style={{ ...styles.panel, background: '#fff', boxShadow: 'none', padding: '22px', display: 'grid', gap: '16px' }}>
+                      <div>
+                        <h4 style={{ ...styles.panelTitle, fontSize: '18px' }}>Recent Drafts</h4>
+                        <p style={styles.rowSub}>Reopen a recent CMS idea, reuse the prompt, and keep refining without starting from scratch.</p>
+                      </div>
+                      <div style={{ display: 'grid', gap: '12px' }}>
+                        {cmsCopilotHistory.map((entry) => (
+                          <button
+                            key={entry.id}
+                            type="button"
+                            onClick={() => restoreCmsDraftFromHistory(entry)}
+                            style={{
+                              ...styles.customerCard,
+                              width: '100%',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              display: 'grid',
+                              gap: '6px',
+                              background: '#fcfaf5',
+                              borderColor: '#e7dece',
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
+                              <div style={{ ...styles.cardTitle, fontSize: '15px' }}>{safeText(entry.draft?.hero_headline, 'Draft')}</div>
+                              <span style={{ ...styles.statusBadge, background: '#f2eadc', color: '#8b6b2f' }}>
+                                {new Date(entry.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <div style={styles.rowSub}>{safeText(entry.prompt, 'Untitled prompt')}</div>
+                          </button>
+                        ))}
                       </div>
                     </div>
                   )}
