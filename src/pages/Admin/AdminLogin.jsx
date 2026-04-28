@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
 import { Lock, Mail, Loader2, ArrowRight } from 'lucide-react';
 
@@ -44,6 +44,7 @@ const AdminLogin = () => {
           </div>
           <h1 className="text-3xl font-black text-[#183126] tracking-tight">Poultry Back Office</h1>
           <p className="text-gray-500 mt-2 font-medium">Manage your farm sales and inventory</p>
+          <p className="text-[#8b6b2f] mt-3 text-xs font-black uppercase tracking-[0.22em]">Multi-farm vendor dashboard</p>
         </div>
 
         {/* Login Card */}
@@ -105,8 +106,16 @@ const AdminLogin = () => {
           </form>
         </div>
 
+        <p className="text-center mt-8 text-gray-500 text-sm font-bold">
+          New farm vendor? <Link to="/register" className="text-[#1d4d35] hover:underline">Register your farm</Link>
+        </p>
+
+        <p className="text-center mt-4 text-gray-500 text-sm font-bold">
+          Need to view a public farm page? <Link to="/new-dawn" className="text-[#1d4d35] hover:underline">Open the demo storefront</Link>
+        </p>
+
         {/* Footer info */}
-        <p className="text-center mt-10 text-gray-400 text-xs font-bold uppercase tracking-widest">
+        <p className="text-center mt-6 text-gray-400 text-xs font-bold uppercase tracking-widest">
           SaaS Developed by Kasi Business Hub
         </p>
       </div>

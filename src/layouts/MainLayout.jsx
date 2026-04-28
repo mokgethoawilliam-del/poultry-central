@@ -3,7 +3,8 @@ import { useParams, Outlet, useLocation, Link } from 'react-router-dom';
 import { getFarmBySlug } from '../services/supabase';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { MessageCircle, Package } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Package } from 'lucide-react';
+import { phoneDigits, safeSlug } from '../utils/content';
 
 const MainLayout = () => {
   const { farmSlug } = useParams();
@@ -12,6 +13,7 @@ const MainLayout = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeOrderId, setActiveOrderId] = useState(null);
+  const activeFarmSlug = safeSlug(farm?.slug || farmSlug, farmSlug || 'new-dawn');
 
   // Hide global Header/Footer on the home route — the user's landing page has its own nav
   const isHome = location.pathname === `/${farmSlug}` || location.pathname === `/${farmSlug}/`;
@@ -50,10 +52,20 @@ const MainLayout = () => {
   );
 
   if (error || !farm) return (
-    <div className="h-screen w-full flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-primary mb-4">404</h1>
-        <p className="text-gray-600">We couldn't find the farm you're looking for.</p>
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#fcfaf5] px-6">
+      <div className="max-w-xl rounded-[32px] border border-[#e6dfd1] bg-white p-12 text-center shadow-xl">
+        <div className="text-xs font-black uppercase tracking-[0.25em] text-[#8b6b2f] mb-4">Farmfront not found</div>
+        <h1 className="text-4xl font-black text-[#183126] mb-4">We couldn't find that farm page.</h1>
+        <p className="text-[#5f6c65] font-medium leading-relaxed mb-8">
+          The link may be old, the farm slug may have changed, or this storefront has not been published yet.
+        </p>
+        <Link
+          to="/admin/login"
+          className="inline-flex items-center gap-2 rounded-full bg-[#1d4d35] px-6 py-4 text-sm font-black text-white shadow-lg"
+        >
+          <ArrowLeft size={18} />
+          Go to Admin Login
+        </Link>
       </div>
     </div>
   );
@@ -70,7 +82,7 @@ const MainLayout = () => {
       {/* WhatsApp Float — shown on sub-pages only, landing page has its own */}
       {!isHome && (
         <a
-          href={`https://wa.me/${farm.contact_info?.whatsapp?.replace(/[^0-9]/g, '')}`}
+          href={`https://wa.me/${phoneDigits(farm.contact_info?.whatsapp || farm.contact_info?.phone)}`}
           className="whatsapp-float btn btn-whatsapp p-4 rounded-full"
           target="_blank"
           rel="noopener noreferrer"
@@ -80,9 +92,9 @@ const MainLayout = () => {
       )}
 
       {/* Track Order Float — shown when an active order exists */}
-      {activeOrderId && location.pathname !== `/${farm?.slug}/order` && (
+      {activeOrderId && location.pathname !== `/${activeFarmSlug}/order` && (
         <Link
-          to={`/${farm?.slug}/order`}
+          to={`/${activeFarmSlug}/order`}
           className="fixed bottom-6 left-6 bg-[#1d4d35] text-white p-4 rounded-full shadow-2xl flex items-center gap-3 z-50 hover:scale-110 transition-all border-2 border-white/20 animate-bounce"
         >
           <Package size={24} />
