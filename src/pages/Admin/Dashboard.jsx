@@ -26,6 +26,7 @@ import {
   CheckCircle2,
   Clock3,
   Loader2,
+  Sparkles,
 } from 'lucide-react';
 import { uploadShopAsset, deleteOldAsset } from '../../services/supabase';
 import { firstLetter, safeSlug, safeText } from '../../utils/content';
@@ -60,6 +61,10 @@ const Dashboard = () => {
   const [deleteConfirmation, setDeleteConfirmation] = useState(false);
   const [liveTime, setLiveTime] = useState(new Date().toLocaleTimeString());
   const [showBillingModal, setShowBillingModal] = useState(false);
+  const [cmsCopilotPrompt, setCmsCopilotPrompt] = useState('');
+  const [cmsCopilotLoading, setCmsCopilotLoading] = useState(false);
+  const [cmsCopilotError, setCmsCopilotError] = useState('');
+  const [cmsCopilotDraft, setCmsCopilotDraft] = useState(null);
   const [showProductModal, setShowProductModal] = useState(false);
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
@@ -243,6 +248,7 @@ const Dashboard = () => {
     try {
       const { error } = await supabase.from('farms').update({
         name: farmData.name,
+        site_title: farmData.site_title,
         about_story: farmData.about_story,
         branding: farmData.branding,
         contact_info: farmData.contact_info,
@@ -451,6 +457,60 @@ const Dashboard = () => {
     } finally {
       setModalSaving(false);
     }
+  };
+
+  const handleGenerateCmsDraft = async (e) => {
+    e.preventDefault();
+    if (!farmData?.id || !cmsCopilotPrompt.trim()) return;
+
+    setCmsCopilotLoading(true);
+    setCmsCopilotError('');
+
+    try {
+      const response = await fetch('/api/cms-copilot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: cmsCopilotPrompt,
+          farm: {
+            name: safeText(farmData?.name),
+            site_title: safeText(farmData?.site_title),
+            hero_headline: safeText(farmData?.branding?.hero_headline),
+            hero_subtitle: safeText(farmData?.branding?.hero_subtitle),
+            about_story: safeText(farmData?.about_story),
+            why_content: safeText(farmData?.why_content),
+            address: safeText(farmData?.contact_info?.address),
+            operating_hours: safeText(farmData?.contact_info?.operating_hours),
+          },
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error || 'Could not generate CMS draft right now.');
+      setCmsCopilotDraft(payload.draft || null);
+    } catch (err) {
+      setCmsCopilotError(err.message || 'Could not generate CMS draft right now.');
+    } finally {
+      setCmsCopilotLoading(false);
+    }
+  };
+
+  const applyCmsDraft = () => {
+    if (!cmsCopilotDraft) return;
+
+    setFarmData((current) => ({
+      ...current,
+      site_title: cmsCopilotDraft.site_title || current.site_title,
+      about_story: cmsCopilotDraft.about_story || current.about_story,
+      why_content: cmsCopilotDraft.why_content || current.why_content,
+      branding: {
+        ...(current.branding || {}),
+        hero_headline: cmsCopilotDraft.hero_headline || current.branding?.hero_headline,
+        hero_subtitle: cmsCopilotDraft.hero_subtitle || current.branding?.hero_subtitle,
+      },
+    }));
+    setSaveStatus('CMS draft applied');
+    setTimeout(() => setSaveStatus(''), 2000);
   };
 
   const resetTestimonialForm = () => {
@@ -1304,6 +1364,7 @@ const Dashboard = () => {
                 {[
                   { id: 'brand', title: 'Brand & Website Identity', description: 'Farm name, colours, hero copy, logo, about section, and contact details.', cta: 'Open brand editor' },
                   { id: 'gallery', title: 'Gallery Manager', description: 'Manage the public gallery photos that give the farm site more life.', cta: 'Open gallery manager' },
+                  { id: 'copilot', title: 'Website CMS Copilot', description: 'Draft sharper homepage copy from a plain-language brief before you save anything.', cta: 'Open CMS copilot' },
                 ].map(item => (
                   <button key={item.id} type="button" style={styles.settingsHubCard} onClick={() => setSiteEditorView(item.id)}>
                     <div style={styles.settingsHubKicker}>CMS Tool</div>
@@ -1318,11 +1379,19 @@ const Dashboard = () => {
             <section style={styles.panel}>
               <div style={styles.panelHead}>
                 <div>
-                  <h3 style={styles.panelTitle}>{siteEditorView === 'brand' ? 'Brand & Website Identity' : 'Gallery Manager'}</h3>
+                  <h3 style={styles.panelTitle}>
+                    {siteEditorView === 'brand'
+                      ? 'Brand & Website Identity'
+                      : siteEditorView === 'gallery'
+                        ? 'Gallery Manager'
+                        : 'Website CMS Copilot'}
+                  </h3>
                   <p style={styles.rowSub}>
                     {siteEditorView === 'brand'
                       ? 'Update the public face of the farm without digging through unrelated settings.'
-                      : 'Curate the gallery photos shown on the public site.'}
+                      : siteEditorView === 'gallery'
+                        ? 'Curate the gallery photos shown on the public site.'
+                        : 'Draft stronger storefront copy from a simple prompt, then apply it into your editable fields.'}
                   </p>
                 </div>
                 <button type="button" style={styles.outlineBtn} onClick={() => setSiteEditorView(null)}>← Back to CMS Settings</button>
@@ -1355,8 +1424,18 @@ const Dashboard = () => {
                   </div>
                   <div style={styles.formRow}>
                     <div style={styles.formGroup}>
+                      <label style={styles.label}>Site Strapline</label>
+                      <input style={styles.input} value={safeText(farmData?.site_title)} onChange={e => setFarmData({ ...farmData, site_title: e.target.value })} placeholder="Fresh poultry, eggs, and farm supply" />
+                    </div>
+                    <div style={styles.formGroup}>
                       <label style={styles.label}>Hero Headline</label>
                       <input style={styles.input} value={safeText(farmData?.branding?.hero_headline)} onChange={e => setFarmData({ ...farmData, branding: { ...farmData.branding, hero_headline: e.target.value } })} />
+                    </div>
+                  </div>
+                  <div style={styles.formRow}>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Hero Subtitle</label>
+                      <textarea style={{ ...styles.input, height: '90px', resize: 'none' }} value={safeText(farmData?.branding?.hero_subtitle)} onChange={e => setFarmData({ ...farmData, branding: { ...farmData.branding, hero_subtitle: e.target.value } })} />
                     </div>
                     <div style={styles.formGroup}>
                       <label style={styles.label}>Hero Image</label>
@@ -1368,6 +1447,10 @@ const Dashboard = () => {
                         </label>
                       </div>
                     </div>
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Why Customers Choose You</label>
+                    <textarea style={{ ...styles.input, height: '90px', resize: 'none' }} value={safeText(farmData?.why_content)} onChange={e => setFarmData({ ...farmData, why_content: e.target.value })} />
                   </div>
                   <div style={styles.formRow}>
                     <div style={styles.formGroup}>
@@ -1432,6 +1515,84 @@ const Dashboard = () => {
                       <span style={{ fontSize: '11px', fontWeight: 800 }}>Add Photo</span>
                     </button>
                   </div>
+                </div>
+              )}
+
+              {siteEditorView === 'copilot' && (
+                <div style={{ display: 'grid', gap: '20px' }}>
+                  <div style={{ ...styles.panel, background: '#fcfaf5', boxShadow: 'none', padding: '18px' }}>
+                    <div style={styles.rowSub}>
+                      Tell the copilot what kind of farm you are, the tone you want, and the buyers you want to attract. It will draft homepage copy for review before anything is saved.
+                    </div>
+                  </div>
+
+                  <div style={styles.copilotPromptGrid}>
+                    {[
+                      'Make this sound like a trusted family poultry farm for local households and WhatsApp orders.',
+                      'Position this farm as a premium supplier for butcheries, resellers, and bulk event orders.',
+                      'Write warmer homepage copy for a community-focused poultry farm serving Polokwane and nearby areas.',
+                    ].map((idea) => (
+                      <button key={idea} type="button" style={styles.copilotIdeaBtn} onClick={() => setCmsCopilotPrompt(idea)}>
+                        Use Prompt
+                      </button>
+                    ))}
+                  </div>
+
+                  <form onSubmit={handleGenerateCmsDraft} style={{ display: 'grid', gap: '16px' }}>
+                    <div style={styles.formGroup}>
+                      <label style={styles.label}>Copilot Prompt</label>
+                      <textarea
+                        style={{ ...styles.input, height: '140px', resize: 'none' }}
+                        value={cmsCopilotPrompt}
+                        onChange={e => setCmsCopilotPrompt(e.target.value)}
+                        placeholder="Example: Write polished homepage copy for a poultry farm that sells broilers, fresh eggs, and chicks to both local families and bulk buyers. Keep it warm, confident, and practical."
+                      />
+                    </div>
+                    {cmsCopilotError && (
+                      <div style={{ ...styles.customerCard, borderColor: '#f2c9c2', background: '#fff5f3', color: '#8c3a2e' }}>
+                        {cmsCopilotError}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                      <button type="submit" style={styles.primaryBtnLarge} disabled={cmsCopilotLoading}>
+                        {cmsCopilotLoading ? <><Loader2 size={18} style={{ marginRight: '8px' }} /> Drafting...</> : <><Sparkles size={18} style={{ marginRight: '8px' }} /> Generate Draft</>}
+                      </button>
+                    </div>
+                  </form>
+
+                  {cmsCopilotDraft && (
+                    <div style={{ ...styles.panel, background: '#fcfaf5', boxShadow: 'none', padding: '22px', display: 'grid', gap: '18px' }}>
+                      <div style={styles.panelHead}>
+                        <div>
+                          <h4 style={{ ...styles.panelTitle, fontSize: '18px' }}>Draft Preview</h4>
+                          <p style={styles.rowSub}>Review this copy, apply it into the brand fields, then save your farm settings normally.</p>
+                        </div>
+                        <button type="button" style={styles.primaryBtn} onClick={applyCmsDraft}>Apply Draft To Fields</button>
+                      </div>
+                      <div style={styles.formGrid}>
+                        <div style={styles.formGroup}>
+                          <label style={styles.label}>Site Strapline</label>
+                          <div style={styles.copilotDraftBox}>{safeText(cmsCopilotDraft.site_title, '-')}</div>
+                        </div>
+                        <div style={styles.formGroup}>
+                          <label style={styles.label}>Hero Headline</label>
+                          <div style={styles.copilotDraftBox}>{safeText(cmsCopilotDraft.hero_headline, '-')}</div>
+                        </div>
+                        <div style={styles.formGroup}>
+                          <label style={styles.label}>Hero Subtitle</label>
+                          <div style={styles.copilotDraftBox}>{safeText(cmsCopilotDraft.hero_subtitle, '-')}</div>
+                        </div>
+                        <div style={styles.formGroup}>
+                          <label style={styles.label}>Why Customers Choose You</label>
+                          <div style={styles.copilotDraftBox}>{safeText(cmsCopilotDraft.why_content, '-')}</div>
+                        </div>
+                        <div style={styles.formGroup}>
+                          <label style={styles.label}>About Story</label>
+                          <div style={styles.copilotDraftBox}>{safeText(cmsCopilotDraft.about_story, '-')}</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </section>
@@ -1873,6 +2034,9 @@ const styles = {
   settingsHubKicker: { fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#8b6b2f' },
   settingsHubTitle: { fontSize: '20px', fontWeight: 900, color: '#183126' },
   settingsHubLink: { marginTop: '6px', fontSize: '13px', fontWeight: 800, color: '#1d4d35' },
+  copilotPromptGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' },
+  copilotIdeaBtn: { border: '1px solid #d8d0c1', borderRadius: '14px', padding: '14px 16px', background: '#fff', color: '#183126', fontWeight: 800, cursor: 'pointer', fontSize: '13px', textAlign: 'center' },
+  copilotDraftBox: { border: '1px solid #e5ddd0', borderRadius: '16px', padding: '16px', background: '#fff', color: '#31453a', minHeight: '52px', lineHeight: 1.5 },
   avatar: { width: '44px', height: '44px', borderRadius: '50%', background: '#1d4d35', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '18px', marginBottom: '12px' },
   cardTitle: { fontSize: '18px', fontWeight: 800, marginBottom: '4px' },
   saveStatus: { padding: '8px 16px', background: '#1d4d35', color: '#fff', borderRadius: '12px', fontSize: '11px', fontWeight: 800 },
