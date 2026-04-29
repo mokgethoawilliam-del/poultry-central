@@ -18,6 +18,8 @@ import broilerImage from "../assets/healthy_broiler_poultry_1776000591785.png";
 import eggsImage from "../assets/fresh_organic_eggs_1776000562761.png";
 import chicksImage from "../assets/media__1775999890077.png";
 import newDawnLogo from "../assets/new-dawn-logo.jpg";
+import newDawnLiveChickenImage from "../assets/new-dawn-live-chicken.jpg";
+import newDawnDayOldChicksImage from "../assets/new-dawn-day-old-chicks.jpg";
 import newDawnOwnerImage from "../assets/new-dawn-owner.jpg";
 import { phoneDigits, safeSlug, safeText } from "../utils/content";
 import StorefrontLegalModal from "../components/StorefrontLegalModal";
@@ -99,6 +101,13 @@ export default function Home() {
   const displayLogo = safeText(farm.logo_url) || (farmSlug === 'new-dawn' ? newDawnLogo : '');
   const aboutImage = safeText(farm.about_image_url) || (farmSlug === 'new-dawn' ? newDawnOwnerImage : broilerImage);
   const whatsappNumber = phoneDigits(contact.whatsapp || contact.phone);
+  const storefrontFallbackProducts = farmSlug === 'new-dawn'
+    ? [
+        { ...fallbackProducts[0], image: newDawnLiveChickenImage },
+        fallbackProducts[1],
+        { ...fallbackProducts[2], image: newDawnDayOldChicksImage },
+      ]
+    : fallbackProducts;
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [products, setProducts] = useState([]);
@@ -138,12 +147,12 @@ export default function Home() {
     products.length > 0
       ? products.slice(0, 3).map((product, index) => ({
           id: product.id,
-          title: safeText(product.name, fallbackProducts[index]?.title || "Farm Product"),
-          desc: safeText(product.description, fallbackProducts[index]?.desc),
-          image: safeImage(product.image_url, fallbackProducts[index]?.image || broilerImage),
+          title: safeText(product.name, storefrontFallbackProducts[index]?.title || "Farm Product"),
+          desc: safeText(product.description, storefrontFallbackProducts[index]?.desc),
+          image: safeImage(product.image_url, storefrontFallbackProducts[index]?.image || broilerImage),
           cta: `Order ${safeText(product.name, "Now")}`,
         }))
-      : fallbackProducts;
+      : storefrontFallbackProducts;
 
   const displayTestimonials = testimonials.length > 0 ? testimonials.slice(0, 2) : fallbackTestimonials;
 
