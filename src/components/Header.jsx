@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, MessageCircle } from 'lucide-react';
+import { Menu, X, MessageCircle, ShoppingCart } from 'lucide-react';
 import newDawnLogo from '../assets/new-dawn-logo.jpg';
 import { firstLetter, phoneDigits, safeSlug, safeText } from '../utils/content';
+import { getCartCount } from '../utils/cart';
 
 const Header = ({ farm }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
   const location = useLocation();
   const contact = farm?.contact_info || {};
   const farmName = safeText(farm?.name, 'New Dawn Poultry');
@@ -22,6 +24,18 @@ const Header = ({ farm }) => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (!farm?.id) return;
+    const syncCartCount = () => setCartCount(getCartCount(farm.id));
+    syncCartCount();
+    window.addEventListener('storage', syncCartCount);
+    window.addEventListener('poultry-cart-updated', syncCartCount);
+    return () => {
+      window.removeEventListener('storage', syncCartCount);
+      window.removeEventListener('poultry-cart-updated', syncCartCount);
+    };
+  }, [farm?.id]);
 
   const openWhatsApp = (message = "Hello, I would like to enquire about your poultry products.") => {
     window.open(
@@ -95,6 +109,18 @@ const Header = ({ farm }) => {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3">
+            <Link
+              to={`/${farmSlug}/order`}
+              className="relative hidden sm:flex h-12 w-12 items-center justify-center rounded-full border border-[#ead9d6] bg-white text-[#7f1d1d] shadow-sm transition-colors hover:bg-[#fff5f5]"
+              aria-label="Open cart"
+            >
+              <ShoppingCart size={20} />
+              {cartCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#b91c1c] px-1 text-[10px] font-black text-white">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
             <button
               onClick={() => openWhatsApp()}
               className="hidden sm:flex items-center gap-2 px-5 py-3 rounded-full border border-[#d8d0c1] bg-white text-[#183126] font-bold text-sm hover:bg-[#fcfaf5] transition-colors"
@@ -103,7 +129,7 @@ const Header = ({ farm }) => {
             </button>
             <Link
               to={`/${farmSlug}/order`}
-              className="px-6 py-3 rounded-full bg-[#c2410c] text-white font-extrabold text-sm hover:bg-[#9a3412] transition-all shadow-md active:scale-95"
+              className="px-6 py-3 rounded-full bg-[#b91c1c] text-white font-extrabold text-sm hover:bg-[#991b1b] transition-all shadow-md active:scale-95"
             >
               Order Now
             </Link>
@@ -137,6 +163,14 @@ const Header = ({ farm }) => {
             >
               Message Us on WhatsApp
             </button>
+            <Link
+              to={`/${farmSlug}/order`}
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center justify-center gap-2 rounded-2xl bg-[#b91c1c] py-4 text-base font-black text-white"
+            >
+              <ShoppingCart size={20} />
+              Cart{cartCount > 0 ? ` (${cartCount})` : ''}
+            </Link>
           </div>
         )}
       </div>

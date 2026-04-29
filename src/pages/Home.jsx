@@ -8,6 +8,7 @@ import {
   MessageCircle,
   ShieldCheck,
   ShoppingBasket,
+  ShoppingCart,
   Sprout,
   Truck,
   X,
@@ -22,12 +23,13 @@ import newDawnLiveChickenImage from "../assets/new-dawn-live-chicken.jpg";
 import newDawnDayOldChicksImage from "../assets/new-dawn-day-old-chicks.jpg";
 import newDawnOwnerImage from "../assets/new-dawn-owner.jpg";
 import { phoneDigits, safeSlug, safeText } from "../utils/content";
+import { getCartCount } from "../utils/cart";
 import StorefrontLegalModal from "../components/StorefrontLegalModal";
 
 const fallbackFarm = {
   name: "The New Dawn Poultry Farm",
   slug: "new-dawn",
-  primary_color: "#c2410c",
+  primary_color: "#b91c1c",
   logo_url: newDawnLogo,
   site_title: "Fresh poultry in Polokwane",
   hero_subtitle:
@@ -40,6 +42,7 @@ const fallbackFarm = {
     address: "Polokwane, Limpopo Province, South Africa",
     phone: "015 004 0130",
     whatsapp: "27150040130",
+    google_maps_url: "",
   },
 };
 
@@ -91,6 +94,18 @@ const safeImage = (value, fallback) => {
   return src && /^https?:\/\//.test(src) ? src : src || fallback;
 };
 
+const buildMapsSearchUrl = (contact) => {
+  const directUrl = safeText(contact?.google_maps_url);
+  if (directUrl) return directUrl;
+
+  const address = safeText(contact?.address);
+  if (!address) return '';
+
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+};
+
+const isEmbeddableMap = (url) => /google\.[^/]+\/maps\/embed|google\.com\/maps\/embed/i.test(url);
+
 export default function Home() {
   const { farm: outletFarm } = useOutletContext();
   const farm = useMemo(() => ({ ...fallbackFarm, ...outletFarm }), [outletFarm]);
@@ -101,6 +116,8 @@ export default function Home() {
   const displayLogo = safeText(farm.logo_url) || (farmSlug === 'new-dawn' ? newDawnLogo : '');
   const aboutImage = safeText(farm.about_image_url) || (farmSlug === 'new-dawn' ? newDawnOwnerImage : broilerImage);
   const whatsappNumber = phoneDigits(contact.whatsapp || contact.phone);
+  const mapsUrl = buildMapsSearchUrl(contact);
+  const mapsEmbedUrl = isEmbeddableMap(mapsUrl) ? mapsUrl : '';
   const storefrontFallbackProducts = farmSlug === 'new-dawn'
     ? [
         { ...fallbackProducts[0], image: newDawnLiveChickenImage },
@@ -110,6 +127,7 @@ export default function Home() {
     : fallbackProducts;
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
   const [products, setProducts] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
   const [legalView, setLegalView] = useState(null);
@@ -140,6 +158,18 @@ export default function Home() {
     };
   }, [farm.id]);
 
+  useEffect(() => {
+    if (!farm.id) return;
+    const syncCartCount = () => setCartCount(getCartCount(farm.id));
+    syncCartCount();
+    window.addEventListener('storage', syncCartCount);
+    window.addEventListener('poultry-cart-updated', syncCartCount);
+    return () => {
+      window.removeEventListener('storage', syncCartCount);
+      window.removeEventListener('poultry-cart-updated', syncCartCount);
+    };
+  }, [farm.id]);
+
   const heroHeadline = safeText(farm.branding?.hero_headline, "Farm fresh poultry, ready for your table.");
   const heroWords = heroHeadline.split(/[.,]/).map((part) => part.trim()).filter(Boolean);
 
@@ -161,6 +191,7 @@ export default function Home() {
     { label: "Services", to: `/${farmSlug}/services` },
     { label: "Gallery", to: `/${farmSlug}/gallery` },
     { label: "About", href: "#about" },
+    { label: "Reviews", href: "#reviews" },
     { label: "Contact", to: `/${farmSlug}/contact` },
   ];
 
@@ -204,6 +235,18 @@ export default function Home() {
           </div>
 
           <div className="hidden items-center gap-3 md:flex">
+            <Link
+              to={`/${farmSlug}/order`}
+              className="relative flex h-12 w-12 items-center justify-center rounded-full border border-[#ead9d6] bg-white text-[#7f1d1d] shadow-sm"
+              aria-label="Open cart"
+            >
+              <ShoppingCart size={20} />
+              {cartCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#b91c1c] px-1 text-[10px] font-black text-white">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
             <a
               href={`https://wa.me/${whatsappNumber}`}
               target="_blank"
@@ -215,8 +258,7 @@ export default function Home() {
             </a>
             <Link
               to={`/${farmSlug}/order`}
-              className="flex items-center gap-2 rounded-full px-6 py-3 text-sm font-black text-white shadow-lg"
-              style={{ backgroundColor: primaryColor }}
+              className="flex items-center gap-2 rounded-full bg-[#b91c1c] px-6 py-3 text-sm font-black text-white shadow-lg"
             >
               Order Now
               <ArrowRight size={18} />
@@ -249,10 +291,17 @@ export default function Home() {
               <Link
                 to={`/${farmSlug}/order`}
                 onClick={() => setMenuOpen(false)}
-                className="rounded-full px-6 py-4 text-center font-black text-white"
-                style={{ backgroundColor: primaryColor }}
+                className="rounded-full bg-[#b91c1c] px-6 py-4 text-center font-black text-white"
               >
                 Order Now
+              </Link>
+              <Link
+                to={`/${farmSlug}/order`}
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center justify-center gap-2 rounded-full border border-[#ead9d6] bg-white px-6 py-4 text-center font-black text-[#7f1d1d]"
+              >
+                <ShoppingCart size={18} />
+                Cart{cartCount > 0 ? ` (${cartCount})` : ''}
               </Link>
             </div>
           </div>
@@ -330,7 +379,7 @@ export default function Home() {
         </a>
       </section>
 
-      <section className="bg-[#183126] py-8 text-white">
+      <section className="bg-[#7f1d1d] py-8 text-white">
         <div className="mx-auto grid max-w-[1200px] grid-cols-2 gap-4 px-[5%] md:grid-cols-4">
           {trustBadges.map((badge) => (
             <div key={badge.label} className="flex items-center justify-center gap-3 text-center text-xs font-black uppercase tracking-[0.16em]">
@@ -399,10 +448,10 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="bg-[#f5f0e6] py-24">
+      <section id="reviews" className="bg-[#f5f0e6] py-24">
         <div className="mx-auto max-w-[1200px] px-[5%]">
           <div className="mb-12 text-center">
-            <p className="text-xs font-black uppercase tracking-[0.25em] text-[#8b6b2f]">Verified feedback</p>
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-[#8b6b2f]">Customer reviews</p>
             <h2 className="mt-4 text-4xl font-black tracking-tight md:text-5xl">What customers say</h2>
           </div>
           <div className="grid gap-8 md:grid-cols-2">
@@ -424,6 +473,87 @@ export default function Home() {
                 </figcaption>
               </figure>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white py-24">
+        <div className="mx-auto max-w-[1200px] px-[5%]">
+          <div className="mb-12 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.25em] text-[#8b6b2f]">Find us</p>
+              <h2 className="mt-4 text-4xl font-black tracking-tight md:text-5xl">Visit the farm with confidence</h2>
+              <p className="mt-4 max-w-2xl text-lg font-medium leading-relaxed text-[#5f6c65]">
+                Get directions straight from the website instead of guessing where the farm is.
+              </p>
+            </div>
+            {mapsUrl && (
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#c2410c] px-6 py-4 text-sm font-black text-white shadow-lg"
+              >
+                Open in Google Maps
+                <ArrowRight size={18} />
+              </a>
+            )}
+          </div>
+
+          <div className="grid gap-8 lg:grid-cols-[0.75fr_1.25fr]">
+            <div className="rounded-[32px] border border-[#e6dfd1] bg-[#fcfaf5] p-8 shadow-sm">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-[#8b6b2f]">Location details</p>
+              <h3 className="mt-4 text-2xl font-black text-[#183126]">The New Dawn Poultry Farm</h3>
+              <p className="mt-5 text-base font-medium leading-relaxed text-[#5f6c65]">
+                {safeText(contact.address, fallbackFarm.contact_info.address)}
+              </p>
+              <p className="mt-4 text-sm font-bold text-[#183126]">
+                {safeText(contact.operating_hours, "Mon - Sat: 08:00 - 17:00")}
+              </p>
+              {mapsUrl && (
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-8 inline-flex items-center gap-2 text-sm font-black text-[#c2410c]"
+                >
+                  Get turn-by-turn directions
+                  <ArrowRight size={16} />
+                </a>
+              )}
+            </div>
+
+            <div className="overflow-hidden rounded-[32px] border border-[#e6dfd1] bg-white shadow-sm">
+              {mapsEmbedUrl ? (
+                <iframe
+                  title={`${farmName} map`}
+                  src={mapsEmbedUrl}
+                  className="h-[420px] w-full border-0"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  allowFullScreen
+                />
+              ) : (
+                <div className="flex h-[420px] flex-col items-center justify-center bg-[#f5f0e6] px-8 text-center">
+                  <p className="text-xs font-black uppercase tracking-[0.25em] text-[#8b6b2f]">Google Maps</p>
+                  <h3 className="mt-4 text-3xl font-black text-[#183126]">Add an embed URL in admin for an inline map</h3>
+                  <p className="mt-4 max-w-lg text-base font-medium leading-relaxed text-[#5f6c65]">
+                    For now, customers can still open directions directly in Google Maps using the button.
+                  </p>
+                  {mapsUrl && (
+                    <a
+                      href={mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-8 inline-flex items-center justify-center gap-2 rounded-full border border-[#d8d0c1] bg-white px-6 py-4 text-sm font-black text-[#183126]"
+                    >
+                      Open Directions
+                      <ArrowRight size={18} />
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </section>

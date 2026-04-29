@@ -45,6 +45,26 @@ const MainLayout = () => {
     return () => window.removeEventListener('storage', checkOrder);
   }, [farmSlug, farm?.id]);
 
+  useEffect(() => {
+    if (!farm) return;
+    const pageName = location.pathname.split('/').filter(Boolean).slice(1)[0] || 'home';
+    const prettyPageName = pageName === 'home' ? 'Home' : pageName.charAt(0).toUpperCase() + pageName.slice(1);
+    const pageTitle = prettyPageName === 'Home'
+      ? `${farm.name} | Fresh poultry and farm supply`
+      : `${farm.name} | ${prettyPageName}`;
+    const pageDescription = farm.site_title || `Order poultry products, explore services, and contact ${farm.name}.`;
+    document.title = pageTitle;
+
+    const descriptionTag = document.querySelector('meta[name="description"]');
+    if (descriptionTag) descriptionTag.setAttribute('content', pageDescription);
+
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute('content', pageTitle);
+
+    const ogDescription = document.querySelector('meta[property="og:description"]');
+    if (ogDescription) ogDescription.setAttribute('content', pageDescription);
+  }, [farm, location.pathname]);
+
   if (loading) return (
     <div className="h-screen w-full flex items-center justify-center bg-[#fcfaf5]">
       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#c2410c]"></div>

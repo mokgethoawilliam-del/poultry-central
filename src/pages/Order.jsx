@@ -9,9 +9,13 @@ import {
   MessageCircle, 
   CheckCircle2, 
   ArrowRight,
-  Info
+  Info,
+  ShoppingCart,
+  Trash2,
+  Plus,
 } from 'lucide-react';
 import { phoneDigits, safeText } from '../utils/content';
+import { addCartItem, clearCartItems, getCartItems, removeCartItem, updateCartItemQuantity } from '../utils/cart';
 
 const Order = () => {
   const { farm } = useOutletContext();
@@ -25,6 +29,8 @@ const Order = () => {
   const [success, setSuccess] = useState(false);
   const [activeOrder, setActiveOrder] = useState(null);
   const [notifiedArrival, setNotifiedArrival] = useState(false);
+  const [cartItems, setCartItems] = useState([]);
+  const [cartNotice, setCartNotice] = useState('');
   
   const [formData, setFormData] = useState({
     customer_name: '',
@@ -45,6 +51,10 @@ const Order = () => {
         .eq('farm_id', farm.id)
         .eq('is_active', true);
       setProducts(data || []);
+      const storedCart = getCartItems(farm.id);
+      const hasLinkedProduct = productId && storedCart.some((item) => item.product_id === productId);
+      const nextCart = productId && !hasLinkedProduct ? addCartItem(farm.id, productId, 1) : storedCart;
+      setCartItems(nextCart);
       setLoading(false);
     };
 
@@ -98,14 +108,52 @@ const Order = () => {
     }
   };
 
+  const handleAddSelectedToCart = () => {
+    if (!formData.product_id) {
+      setCartNotice('Choose a product first.');
+      window.setTimeout(() => setCartNotice(''), 2200);
+      return;
+    }
+    const selected = products.find((p) => p.id === formData.product_id);
+    const nextCart = addCartItem(farm.id, formData.product_id, formData.quantity);
+    setCartItems(nextCart);
+    setCartNotice(`${safeText(selected?.name, 'Product')} added to cart.`);
+    setFormData((curr) => ({ ...curr, quantity: 1 }));
+    window.setTimeout(() => setCartNotice(''), 2200);
+  };
+
+  const handleCartQuantityChange = (productIdToChange, quantity) => {
+    const nextCart = updateCartItemQuantity(farm.id, productIdToChange, quantity);
+    setCartItems(nextCart);
+  };
+
+  const handleRemoveCartItem = (productIdToRemove) => {
+    const nextCart = removeCartItem(farm.id, productIdToRemove);
+    setCartItems(nextCart);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     
     try {
-      const selectedProduct = products.find(p => p.id === formData.product_id);
-      const isQuoteOrder = selectedProduct?.is_price_on_request || selectedProduct?.price === null || selectedProduct?.price === undefined;
-      const totalPrice = isQuoteOrder ? 0 : (selectedProduct?.price || 0) * formData.quantity;
+      if (cartItems.length === 0) {
+        alert('Add at least one product to the cart before placing the order.');
+        setSubmitting(false);
+        return;
+      }
+
+      const cartProducts = cartItems
+        .map((item) => {
+          const product = products.find((p) => p.id === item.product_id);
+          return product ? { item, product } : null;
+        })
+        .filter(Boolean);
+
+      const totalPrice = cartProducts.reduce((sum, entry) => {
+        const isQuoteItem = entry.product.is_price_on_request || entry.product.price === null || entry.product.price === undefined;
+        return isQuoteItem ? sum : sum + (entry.product.price || 0) * entry.item.quantity;
+      }, 0);
       const orderNumber = `ORD-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
       const { data: order, error } = await supabase.from('orders').insert({
@@ -123,15 +171,18 @@ const Order = () => {
 
       if (error) throw error;
 
-      // Add order item
-      await supabase.from('order_items').insert({
-        order_id: order.id,
-        product_id: formData.product_id,
-        quantity: formData.quantity,
-        price_at_time: isQuoteOrder ? 0 : (selectedProduct?.price || 0)
-      });
+      await supabase.from('order_items').insert(
+        cartProducts.map(({ item, product }) => ({
+          order_id: order.id,
+          product_id: item.product_id,
+          quantity: item.quantity,
+          price_at_time: product.is_price_on_request || product.price === null || product.price === undefined ? 0 : (product.price || 0),
+        }))
+      );
 
       localStorage.setItem(`active_order_${farm.id}`, order.id);
+      clearCartItems(farm.id);
+      setCartItems([]);
       setActiveOrder(order);
       setSuccess(true);
       subscribeToOrder(order.id);
@@ -146,14 +197,19 @@ const Order = () => {
 
   const openWhatsApp = () => {
     const contact = farm.contact_info || {};
-    const productName = safeText(products.find(p => p.id === formData.product_id)?.name, 'your poultry products');
-    const msg = `Hi ${farmName}, I've just placed an order (or would like to) for ${productName}. My name is ${formData.customer_name}.`;
+    const cartSummary = cartItems
+      .map((item) => {
+        const product = products.find((p) => p.id === item.product_id);
+        return `${item.quantity} x ${safeText(product?.name, 'product')}`;
+      })
+      .join(', ');
+    const msg = `Hi ${farmName}, I've just placed an order (or would like to) for ${cartSummary || 'your poultry products'}. My name is ${formData.customer_name}.`;
     window.open(`https://wa.me/${phoneDigits(contact.whatsapp || contact.phone)}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
   if (loading) return (
     <div className="h-screen w-full flex items-center justify-center bg-[#fcfaf5]">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#c2410c]"></div>
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#b91c1c]"></div>
     </div>
   );
 
@@ -161,12 +217,12 @@ const Order = () => {
     <div className="pt-32 pb-24 bg-[#fcfaf5] min-h-screen">
       <div className="container mx-auto px-[5%] max-w-[800px] text-center">
         <div className="bg-white p-10 md:p-16 rounded-[40px] shadow-2xl border border-[#e6dfd1] animate-fadeIn">
-          <div className="w-20 h-20 bg-[#c2410c] rounded-full flex items-center justify-center text-white mx-auto mb-8 shadow-xl">
+          <div className="w-20 h-20 bg-[#b91c1c] rounded-full flex items-center justify-center text-white mx-auto mb-8 shadow-xl">
             <CheckCircle2 size={40} />
           </div>
           
           <h1 className="text-3xl md:text-4xl font-black text-[#183126] mb-4">Order {activeOrder?.status === 'pending' ? 'Received' : 'Updated'}!</h1>
-          <div className="bg-[#fcfaf5] py-3 px-6 rounded-full inline-block font-black text-[#c2410c] text-sm mb-8 border border-[#e6dfd1]">
+          <div className="bg-[#fcfaf5] py-3 px-6 rounded-full inline-block font-black text-[#b91c1c] text-sm mb-8 border border-[#e6dfd1]">
             REF: {activeOrder?.order_number}
           </div>
 
@@ -178,11 +234,11 @@ const Order = () => {
                  const isPast = ['pending', 'confirmed', 'ready', 'completed'].indexOf(activeOrder?.status) >= idx;
                  return (
                    <div key={s} className="flex flex-col items-center gap-2 flex-1 relative">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold z-10 ${isPast ? 'bg-[#c2410c] text-white' : 'bg-gray-200 text-gray-400'}`}>
+                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold z-10 ${isPast ? 'bg-[#b91c1c] text-white' : 'bg-gray-200 text-gray-400'}`}>
                          {isPast ? '✓' : idx + 1}
                       </div>
-                      <span className={`text-[9px] uppercase font-black tracking-widest ${isActive ? 'text-[#c2410c]' : 'text-gray-400'}`}>{s}</span>
-                      {idx < 3 && <div className={`absolute top-4 left-1/2 w-full h-[2px] -z-0 ${isPast ? 'bg-[#c2410c]' : 'bg-gray-200'}`}></div>}
+                      <span className={`text-[9px] uppercase font-black tracking-widest ${isActive ? 'text-[#b91c1c]' : 'text-gray-400'}`}>{s}</span>
+                      {idx < 3 && <div className={`absolute top-4 left-1/2 w-full h-[2px] -z-0 ${isPast ? 'bg-[#b91c1c]' : 'bg-gray-200'}`}></div>}
                    </div>
                  );
                })}
@@ -209,7 +265,7 @@ const Order = () => {
                    🚜 I'M AT THE FARM / I'VE ARRIVED
                  </button>
                ) : (
-                 <div className="py-6 bg-[#c2410c] text-white font-black rounded-3xl flex items-center justify-center gap-3 shadow-inner">
+                 <div className="py-6 bg-[#b91c1c] text-white font-black rounded-3xl flex items-center justify-center gap-3 shadow-inner">
                    <CheckCircle2 size={20} /> FARM STAFF NOTIFIED
                  </div>
                )}
@@ -220,7 +276,7 @@ const Order = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button 
               onClick={openWhatsApp}
-              className="px-8 py-4 bg-[#28c76f] text-white font-bold rounded-full shadow-lg hover:bg-[#21a55c] transition-all flex items-center justify-center gap-2 text-sm"
+              className="px-8 py-4 bg-[#b91c1c] text-white font-bold rounded-full shadow-lg hover:bg-[#991b1b] transition-all flex items-center justify-center gap-2 text-sm"
             >
               <MessageCircle size={18} /> Chat with Farm
             </button>
@@ -239,11 +295,34 @@ const Order = () => {
   const selectedProduct = products.find(p => p.id === formData.product_id);
   const isQuoteProduct = Boolean(selectedProduct && (selectedProduct.is_price_on_request || selectedProduct.price === null || selectedProduct.price === undefined));
   const selectedProductPrice = selectedProduct ? (isQuoteProduct ? 'Quote' : `R${selectedProduct.price || 0}`) : '---';
-  const estimatedTotal = selectedProduct ? (isQuoteProduct ? 'Quote' : `R${(selectedProduct.price || 0) * formData.quantity}`) : '---';
+  const cartSummaryItems = cartItems
+    .map((item) => {
+      const product = products.find((p) => p.id === item.product_id);
+      if (!product) return null;
+      const isQuoteItem = product.is_price_on_request || product.price === null || product.price === undefined;
+      return {
+        ...item,
+        product,
+        lineTotal: isQuoteItem ? 'Quote' : `R${(product.price || 0) * item.quantity}`,
+      };
+    })
+    .filter(Boolean);
+  const estimatedTotal = cartSummaryItems.reduce((acc, entry) => {
+    const isQuoteItem = entry.product.is_price_on_request || entry.product.price === null || entry.product.price === undefined;
+    return isQuoteItem ? acc : acc + (entry.product.price || 0) * entry.quantity;
+  }, 0);
+  const hasQuoteItems = cartSummaryItems.some((entry) => entry.product.is_price_on_request || entry.product.price === null || entry.product.price === undefined);
+  const estimatedTotalLabel = cartSummaryItems.length === 0
+    ? '---'
+    : hasQuoteItems && estimatedTotal > 0
+      ? `R${estimatedTotal} + quote items`
+      : hasQuoteItems
+        ? 'Quote'
+        : `R${estimatedTotal}`;
 
   return (
     <div className="pt-24 bg-[#fcfaf5] min-h-screen">
-      <section className="bg-[#c2410c] pt-32 pb-24 text-white relative overflow-hidden">
+      <section className="bg-[#b91c1c] pt-32 pb-24 text-white relative overflow-hidden">
         <div className="container mx-auto px-[5%] max-w-[1200px] relative z-10">
           <h1 className="text-5xl md:text-7xl font-black mb-6 tracking-tight">Secure Your <span className="text-[#fcfaf5] italic">Order</span></h1>
           <p className="text-[#d3ddd7] text-xl max-w-2xl font-medium">
@@ -261,20 +340,20 @@ const Order = () => {
               <form onSubmit={handleSubmit} className="space-y-10">
                 <div className="grid md:grid-cols-2 gap-10">
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#c2410c]">Your Full Name</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#b91c1c]">Your Full Name</label>
                     <input 
                       required
-                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#c2410c] outline-none transition-all"
+                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#b91c1c] outline-none transition-all"
                       placeholder="e.g. Sipho Nkosi"
                       value={formData.customer_name}
                       onChange={e => setFormData({...formData, customer_name: e.target.value})}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#c2410c]">Phone Number (WhatsApp)</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#b91c1c]">Phone Number (WhatsApp)</label>
                     <input 
                       required
-                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#c2410c] outline-none transition-all"
+                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#b91c1c] outline-none transition-all"
                       placeholder="e.g. 015 004 0130"
                       value={formData.customer_phone}
                       onChange={e => setFormData({...formData, customer_phone: e.target.value})}
@@ -284,9 +363,9 @@ const Order = () => {
 
                 <div className="grid md:grid-cols-2 gap-10">
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#c2410c]">Select Product</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#b91c1c]">Select Product</label>
                     <select 
-                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#c2410c] outline-none transition-all appearance-none"
+                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#b91c1c] outline-none transition-all appearance-none"
                       value={formData.product_id}
                       onChange={e => setFormData({...formData, product_id: e.target.value})}
                     >
@@ -299,25 +378,50 @@ const Order = () => {
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#c2410c]">Quantity</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#b91c1c]">Quantity</label>
                     <input 
                       type="number"
                       min="1"
-                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#c2410c] outline-none transition-all"
+                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#b91c1c] outline-none transition-all"
                       value={formData.quantity}
                       onChange={e => setFormData({...formData, quantity: parseInt(e.target.value) || 1})}
                     />
                   </div>
                 </div>
 
+                <div className="rounded-[28px] border border-[#ead9d6] bg-[#fff7f7] p-6">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#b91c1c]">Build your cart</p>
+                      <p className="mt-2 text-sm font-medium text-[#5f6c65]">
+                        Add as many products as you want before you place one combined order request.
+                      </p>
+                      {selectedProduct && (
+                        <p className="mt-3 text-sm font-black text-[#183126]">
+                          Current selection: {safeText(selectedProduct.name, 'Product')} · {selectedProductPrice}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddSelectedToCart}
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-[#b91c1c] px-6 py-4 text-sm font-black text-white shadow-lg hover:bg-[#991b1b]"
+                    >
+                      <Plus size={18} />
+                      Add to Cart
+                    </button>
+                  </div>
+                  {cartNotice && <p className="mt-4 text-sm font-black text-[#b91c1c]">{cartNotice}</p>}
+                </div>
+
                 <div className="space-y-6">
-                  <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#c2410c] block">Fulfillment Method</label>
+                  <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#b91c1c] block">Fulfillment Method</label>
                   <div className="grid grid-cols-2 gap-6">
                     <button
                       type="button"
                       onClick={() => setFormData({...formData, fulfillment_method: 'pickup'})}
                       className={`p-6 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all ${
-                        formData.fulfillment_method === 'pickup' ? 'bg-[#c2410c] border-[#c2410c] text-white shadow-lg' : 'bg-white border-[#e6dfd1] text-[#183126] hover:border-[#c2410c]'
+                        formData.fulfillment_method === 'pickup' ? 'bg-[#b91c1c] border-[#b91c1c] text-white shadow-lg' : 'bg-white border-[#e6dfd1] text-[#183126] hover:border-[#b91c1c]'
                       }`}
                     >
                       <ShoppingBag size={24} />
@@ -327,7 +431,7 @@ const Order = () => {
                       type="button"
                       onClick={() => setFormData({...formData, fulfillment_method: 'delivery'})}
                       className={`p-6 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all ${
-                        formData.fulfillment_method === 'delivery' ? 'bg-[#c2410c] border-[#c2410c] text-white shadow-lg' : 'bg-white border-[#e6dfd1] text-[#183126] hover:border-[#c2410c]'
+                        formData.fulfillment_method === 'delivery' ? 'bg-[#b91c1c] border-[#b91c1c] text-white shadow-lg' : 'bg-white border-[#e6dfd1] text-[#183126] hover:border-[#b91c1c]'
                       }`}
                     >
                       <Truck size={24} />
@@ -338,11 +442,11 @@ const Order = () => {
 
                 {formData.fulfillment_method === 'delivery' && (
                   <div className="space-y-2 animate-fadeIn">
-                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#c2410c]">Delivery Address (Polokwane & Surroundings)</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#b91c1c]">Delivery Address (Polokwane & Surroundings)</label>
                     <textarea 
                       required
                       rows="3"
-                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-3xl font-bold text-[#183126] focus:ring-2 focus:ring-[#c2410c] outline-none transition-all resize-none"
+                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-3xl font-bold text-[#183126] focus:ring-2 focus:ring-[#b91c1c] outline-none transition-all resize-none"
                       placeholder="e.g. 123 Main St, Polokwane, 0700"
                       value={formData.delivery_address}
                       onChange={e => setFormData({...formData, delivery_address: e.target.value})}
@@ -353,7 +457,7 @@ const Order = () => {
                 <div className="pt-10 border-t border-[#e6dfd1]">
                   <button 
                     disabled={submitting}
-                    className="w-full py-6 bg-[#c2410c] text-white font-black text-xl rounded-full shadow-2xl hover:scale-[1.02] flex items-center justify-center gap-3 transition-all disabled:opacity-50"
+                    className="w-full py-6 bg-[#b91c1c] text-white font-black text-xl rounded-full shadow-2xl hover:scale-[1.02] flex items-center justify-center gap-3 transition-all disabled:opacity-50"
                   >
                     {submitting ? 'Processing...' : 'Complete Order Request'}
                     <ArrowRight size={24} />
@@ -367,25 +471,47 @@ const Order = () => {
           {/* Checkout Sidebar */}
           <div className="lg:col-span-4">
             <div className="sticky top-32 space-y-8">
-              <div className="bg-[#183126] text-white p-10 rounded-[40px] shadow-2xl relative overflow-hidden">
-                <h3 className="text-2xl font-black mb-10 border-b border-white/10 pb-6 uppercase tracking-tight">Order Summary</h3>
-                <div className="space-y-6 mb-10">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[#d3ddd7] font-bold">Product</span>
-                    <span className="font-black">{safeText(selectedProduct?.name, '---')}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-[#d3ddd7] font-bold">Quantity</span>
-                    <span className="font-black">x {formData.quantity}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-[#d3ddd7] font-bold">Price</span>
-                    <span className="font-black">{selectedProductPrice}</span>
-                  </div>
+              <div className="bg-[#7f1d1d] text-white p-10 rounded-[40px] shadow-2xl relative overflow-hidden">
+                <h3 className="text-2xl font-black mb-10 border-b border-white/10 pb-6 uppercase tracking-tight">Cart Summary</h3>
+                <div className="space-y-5 mb-10">
+                  {cartSummaryItems.length === 0 ? (
+                    <div className="rounded-[24px] bg-white/10 p-5 text-sm font-medium text-[#f3d9d9]">
+                      Your cart is empty. Choose products and click <span className="font-black text-white">Add to Cart</span>.
+                    </div>
+                  ) : (
+                    cartSummaryItems.map((entry) => (
+                      <div key={entry.product_id} className="rounded-[24px] bg-white/10 p-5">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="font-black text-white">{safeText(entry.product.name, 'Product')}</p>
+                            <p className="mt-1 text-sm font-medium text-[#f3d9d9]">{entry.lineTotal}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCartItem(entry.product_id)}
+                            className="text-[#fbd5d5] transition hover:text-white"
+                            aria-label="Remove item"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                        <div className="mt-4 flex items-center gap-3">
+                          <span className="text-xs font-black uppercase tracking-widest text-[#f3d9d9]">Qty</span>
+                          <input
+                            type="number"
+                            min="1"
+                            value={entry.quantity}
+                            onChange={(e) => handleCartQuantityChange(entry.product_id, parseInt(e.target.value, 10) || 1)}
+                            className="w-24 rounded-2xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-black text-white outline-none"
+                          />
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
                 <div className="flex justify-between items-center border-t border-white/10 pt-8 mt-10">
-                  <span className="text-xl font-black text-[#d6c27c]">Estimated Total</span>
-                  <span className="text-3xl font-black">{estimatedTotal}</span>
+                  <span className="text-xl font-black text-[#f5d0d0]">Estimated Total</span>
+                  <span className="text-3xl font-black">{estimatedTotalLabel}</span>
                 </div>
                 {/* Pattern */}
                 <div className="absolute inset-0 bg-organic opacity-5 pointer-events-none"></div>

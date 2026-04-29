@@ -2282,6 +2282,15 @@ const Dashboard = () => {
                       <input style={styles.input} value={safeText(farmData?.contact_info?.operating_hours)} onChange={e => setFarmData({ ...farmData, contact_info: { ...farmData.contact_info, operating_hours: e.target.value } })} placeholder="Mon - Sat: 08:00 - 17:00" />
                     </div>
                   </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Google Maps Link / Embed URL</label>
+                    <input
+                      style={styles.input}
+                      value={safeText(farmData?.contact_info?.google_maps_url)}
+                      onChange={e => setFarmData({ ...farmData, contact_info: { ...farmData.contact_info, google_maps_url: e.target.value } })}
+                      placeholder="Paste a Google Maps share link or embed URL"
+                    />
+                  </div>
                   <div style={{ borderTop: '1px solid #e5ddd0', paddingTop: '30px', display: 'flex', justifyContent: 'flex-end' }}>
                     <button type="submit" style={styles.primaryBtnLarge}>
                       <Save size={18} style={{ marginRight: '8px' }} /> Save Brand Changes

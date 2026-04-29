@@ -18,7 +18,7 @@ const Footer = ({ farm }) => {
   
   return (
     <>
-      <footer className="bg-[#10261c] text-[#eaf1ed] pt-20 pb-10">
+      <footer className="bg-[#7f1d1d] text-[#fff4f4] pt-20 pb-10">
         <div className="container mx-auto px-[5%] max-w-[1200px]">
         <div className="flex flex-col lg:flex-row justify-between gap-16 mb-16">
           {/* Brand Info */}
@@ -37,14 +37,14 @@ const Footer = ({ farm }) => {
               )}
               <h3 className="text-2xl font-black">{farmName}</h3>
             </div>
-            <p className="text-[#b9c6bf] text-lg leading-relaxed mb-8">
+            <p className="text-[#f6d7d7] text-lg leading-relaxed mb-8">
               {siteTitle}
             </p>
             <div className="flex gap-4">
               {email && (
               <a 
                 href={`mailto:${email}`} 
-                className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#c2410c] transition-all"
+                className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#b91c1c] transition-all"
               >
                 <Mail size={20} />
               </a>
@@ -52,7 +52,7 @@ const Footer = ({ farm }) => {
               {phone && (
               <a 
                 href={`tel:${phone}`} 
-                className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#c2410c] transition-all"
+                className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#b91c1c] transition-all"
               >
                 <Phone size={20} />
               </a>
@@ -65,12 +65,12 @@ const Footer = ({ farm }) => {
             <div>
               <h4 className="text-white font-bold uppercase tracking-widest text-xs mb-8">Quick Navigation</h4>
               <ul className="space-y-4">
-                <li><Link to={`/${farmSlug}`} className="text-[#b9c6bf] hover:text-white transition-colors">Our Farm Home</Link></li>
-                <li><Link to={`/${farmSlug}/products`} className="text-[#b9c6bf] hover:text-white transition-colors">Fresh Products</Link></li>
-                <li><Link to={`/${farmSlug}/services`} className="text-[#b9c6bf] hover:text-white transition-colors">Farm Services</Link></li>
-                <li><Link to={`/${farmSlug}/gallery`} className="text-[#b9c6bf] hover:text-white transition-colors">Gallery</Link></li>
-                <li><Link to={`/${farmSlug}/about`} className="text-[#b9c6bf] hover:text-white transition-colors">About the Farm</Link></li>
-                <li><Link to={`/${farmSlug}/contact`} className="text-[#b9c6bf] hover:text-white transition-colors">Contact Us</Link></li>
+                <li><Link to={`/${farmSlug}`} className="text-[#f6d7d7] hover:text-white transition-colors">Our Farm Home</Link></li>
+                <li><Link to={`/${farmSlug}/products`} className="text-[#f6d7d7] hover:text-white transition-colors">Fresh Products</Link></li>
+                <li><Link to={`/${farmSlug}/services`} className="text-[#f6d7d7] hover:text-white transition-colors">Farm Services</Link></li>
+                <li><Link to={`/${farmSlug}/gallery`} className="text-[#f6d7d7] hover:text-white transition-colors">Gallery</Link></li>
+                <li><Link to={`/${farmSlug}/about`} className="text-[#f6d7d7] hover:text-white transition-colors">About the Farm</Link></li>
+                <li><Link to={`/${farmSlug}/contact`} className="text-[#f6d7d7] hover:text-white transition-colors">Contact Us</Link></li>
               </ul>
             </div>
             
@@ -79,18 +79,18 @@ const Footer = ({ farm }) => {
               <div className="space-y-6">
                 <div className="flex gap-4 items-start">
                   <MapPin size={22} className="text-[#d6c27c] flex-shrink-0" />
-                  <p className="text-[#b9c6bf]">{safeText(contact.address, 'Polokwane, Limpopo, SA')}</p>
+                  <p className="text-[#f6d7d7]">{safeText(contact.address, 'Polokwane, Limpopo, SA')}</p>
                 </div>
                 <div className="flex gap-4 items-start">
                   <Clock size={22} className="text-[#d6c27c] flex-shrink-0" />
-                  <div className="text-[#b9c6bf]">
+                  <div className="text-[#f6d7d7]">
                     <p className="font-bold text-white">Business Hours:</p>
                     <p>{safeText(contact.operating_hours, 'Monday to Saturday')}</p>
                   </div>
                 </div>
                 <div className="flex gap-4 items-start">
-                  <MessageCircle size={22} className="text-[#28c76f] flex-shrink-0" />
-                  <div className="text-[#b9c6bf]">
+                  <MessageCircle size={22} className="text-[#fecaca] flex-shrink-0" />
+                  <div className="text-[#f6d7d7]">
                     <p className="font-bold text-white">WhatsApp Order:</p>
                     <p>{whatsapp}</p>
                   </div>
@@ -98,7 +98,7 @@ const Footer = ({ farm }) => {
                 {email && (
                   <div className="flex gap-4 items-start">
                     <Mail size={22} className="text-[#d6c27c] flex-shrink-0" />
-                    <div className="text-[#b9c6bf]">
+                    <div className="text-[#f6d7d7]">
                       <p className="font-bold text-white">Email:</p>
                       <p>{email}</p>
                     </div>
@@ -109,7 +109,7 @@ const Footer = ({ farm }) => {
           </div>
         </div>
         
-        <div className="pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 text-[#b9c6bf] text-sm tracking-wide">
+        <div className="pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 text-[#f0c8c8] text-sm tracking-wide">
           <p>&copy; {new Date().getFullYear()} {farmName}. Freshness Guaranteed.</p>
           <div className="flex gap-8">
             <button type="button" onClick={() => setLegalView('terms')} className="hover:text-white">Terms & Conditions</button>

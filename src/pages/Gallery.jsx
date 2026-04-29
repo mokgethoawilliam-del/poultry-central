@@ -36,7 +36,7 @@ export default function Gallery() {
 
   return (
     <div className="pt-24 bg-[#fcfaf5] min-h-screen">
-      <section className="bg-[#c2410c] pt-32 pb-24 text-white relative overflow-hidden">
+      <section className="bg-[#b91c1c] pt-32 pb-24 text-white relative overflow-hidden">
         <div className="container mx-auto px-[5%] max-w-[1200px] relative z-10">
           <span className="uppercase tracking-[0.3em] font-black text-[#d6c27c] mb-6 inline-block text-sm">Gallery</span>
           <h1 className="text-5xl md:text-7xl font-black mb-8 tracking-tight">
@@ -71,7 +71,7 @@ export default function Gallery() {
           </div>
         ) : (
           <div className="text-center py-24 bg-white rounded-[40px] border border-dashed border-[#e6dfd1] shadow-sm">
-            <div className="w-20 h-20 mx-auto rounded-full bg-[#fcfaf5] flex items-center justify-center text-[#c2410c] mb-6 border border-[#e6dfd1]">
+            <div className="w-20 h-20 mx-auto rounded-full bg-[#fcfaf5] flex items-center justify-center text-[#b91c1c] mb-6 border border-[#e6dfd1]">
               <ImageIcon size={34} />
             </div>
             <h2 className="text-3xl font-black text-[#183126] mb-4">Gallery coming soon</h2>
@@ -83,7 +83,7 @@ export default function Gallery() {
       </section>
 
       <section className="container mx-auto px-[5%] max-w-[1200px] pb-28">
-        <div className="bg-[#183126] p-12 md:p-20 rounded-[56px] text-white shadow-2xl relative overflow-hidden">
+        <div className="bg-[#7f1d1d] p-12 md:p-20 rounded-[56px] text-white shadow-2xl relative overflow-hidden">
           <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-10">
             <div className="max-w-2xl">
               <span className="uppercase tracking-[0.3em] font-black text-[#d6c27c] mb-5 inline-block text-sm">Need details?</span>
@@ -103,7 +103,7 @@ export default function Gallery() {
                 href={`https://wa.me/${phoneDigits(contact.whatsapp || contact.phone)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-10 py-5 bg-[#28c76f] text-white font-black rounded-full shadow-xl hover:bg-[#21a55c] flex items-center justify-center gap-2"
+                className="px-10 py-5 bg-[#b91c1c] text-white font-black rounded-full shadow-xl hover:bg-[#991b1b] flex items-center justify-center gap-2"
               >
                 <MessageCircle size={20} /> WhatsApp Farm
               </a>

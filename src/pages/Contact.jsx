@@ -11,10 +11,24 @@ import {
 } from 'lucide-react';
 import { phoneDigits, safeText } from '../utils/content';
 
+const buildMapsSearchUrl = (contact) => {
+  const directUrl = safeText(contact?.google_maps_url);
+  if (directUrl) return directUrl;
+
+  const address = safeText(contact?.address);
+  if (!address) return '';
+
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+};
+
+const isEmbeddableMap = (url) => /google\.[^/]+\/maps\/embed|google\.com\/maps\/embed/i.test(url);
+
 const Contact = () => {
   const { farm } = useOutletContext();
   const contact = farm.contact_info || {};
   const farmName = safeText(farm?.name, 'our farm');
+  const mapsUrl = buildMapsSearchUrl(contact);
+  const mapsEmbedUrl = isEmbeddableMap(mapsUrl) ? mapsUrl : '';
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e) => {
@@ -31,7 +45,7 @@ const Contact = () => {
     <div className="pt-48 pb-24 bg-[#fcfaf5] min-h-screen flex items-center justify-center">
       <div className="container mx-auto px-[5%] max-w-[800px] text-center">
         <div className="bg-white p-12 md:p-20 rounded-[40px] shadow-2xl border border-[#e6dfd1] animate-fadeIn">
-          <div className="w-24 h-24 bg-[#c2410c] rounded-full flex items-center justify-center text-white mx-auto mb-10 shadow-xl">
+          <div className="w-24 h-24 bg-[#b91c1c] rounded-full flex items-center justify-center text-white mx-auto mb-10 shadow-xl">
             <CheckCircle2 size={48} />
           </div>
           <h1 className="text-4xl md:text-5xl font-black text-[#183126] mb-6">Message Sent!</h1>
@@ -40,7 +54,7 @@ const Contact = () => {
           </p>
           <button 
             onClick={openWhatsApp}
-            className="px-10 py-5 bg-[#28c76f] text-white font-black rounded-full shadow-lg hover:bg-[#21a55c] transition-all flex items-center justify-center gap-2 mx-auto"
+            className="px-10 py-5 bg-[#b91c1c] text-white font-black rounded-full shadow-lg hover:bg-[#991b1b] transition-all flex items-center justify-center gap-2 mx-auto"
           >
             <MessageCircle size={22} /> Talk on WhatsApp
           </button>
@@ -51,7 +65,7 @@ const Contact = () => {
 
   return (
     <div className="pt-24 bg-[#fcfaf5] min-h-screen">
-       <section className="bg-[#c2410c] pt-32 pb-24 text-white relative overflow-hidden">
+       <section className="bg-[#b91c1c] pt-32 pb-24 text-white relative overflow-hidden">
         <div className="container mx-auto px-[5%] max-w-[1200px] relative z-10">
           <span className="uppercase tracking-[0.3em] font-black text-[#d6c27c] mb-6 inline-block text-sm uppercase italic tracking-widest">Connect with {farmName}</span>
           <h1 className="text-5xl md:text-7xl font-black mb-6 tracking-tight">Get in <span className="text-[#fcfaf5] italic">Touch</span></h1>
@@ -117,7 +131,7 @@ const Contact = () => {
                <div className="pt-10 border-t border-[#e6dfd1]">
                  <button 
                   onClick={openWhatsApp}
-                  className="w-full py-5 bg-[#28c76f] text-white font-black rounded-full shadow-lg hover:scale-105 transition-all flex items-center justify-center gap-3"
+                  className="w-full py-5 bg-[#b91c1c] text-white font-black rounded-full shadow-lg hover:scale-105 transition-all flex items-center justify-center gap-3"
                  >
                   <MessageCircle size={22} /> WhatsApp Inquiry
                  </button>
@@ -134,6 +148,39 @@ const Contact = () => {
               </ul>
                <div className="absolute inset-0 bg-organic opacity-5 pointer-events-none"></div>
             </div>
+
+            {(mapsUrl || safeText(contact.address)) && (
+              <div className="overflow-hidden rounded-[40px] border border-[#e6dfd1] bg-white shadow-xl">
+                {mapsEmbedUrl ? (
+                  <iframe
+                    title={`${farmName} map`}
+                    src={mapsEmbedUrl}
+                    className="h-[320px] w-full border-0"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    allowFullScreen
+                  />
+                ) : (
+                  <div className="flex h-[320px] flex-col items-center justify-center bg-[#f5f0e6] px-8 text-center">
+                    <p className="text-xs font-black uppercase tracking-[0.25em] text-[#8b6b2f]">Find us on Google Maps</p>
+                    <p className="mt-4 max-w-md text-base font-medium leading-relaxed text-[#5f6c65]">
+                      {safeText(contact.address, 'Polokwane, Limpopo Province, SA')}
+                    </p>
+                    {mapsUrl && (
+                      <a
+                        href={mapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-8 inline-flex items-center justify-center gap-2 rounded-full bg-[#b91c1c] px-6 py-4 text-sm font-black text-white shadow-lg"
+                      >
+                        Open in Google Maps
+                        <MapPin size={18} />
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Contact Form */}
@@ -183,7 +230,7 @@ const Contact = () => {
 
                 <button 
                   type="submit"
-                  className="w-full py-6 bg-[#c2410c] text-white font-black text-xl rounded-full shadow-2xl hover:scale-[1.02] flex items-center justify-center gap-3 transition-all"
+                  className="w-full py-6 bg-[#b91c1c] text-white font-black text-xl rounded-full shadow-2xl hover:scale-[1.02] flex items-center justify-center gap-3 transition-all"
                 >
                   Send Inquiry <Send size={22} />
                 </button>

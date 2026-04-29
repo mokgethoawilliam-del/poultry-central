@@ -6,10 +6,10 @@
 
 UPDATE public.farms
 SET
-  primary_color = '#c2410c',
+  primary_color = '#b91c1c',
   branding = COALESCE(branding, '{}'::jsonb)
     || jsonb_build_object(
-      'primary_color', '#c2410c'
+      'primary_color', '#b91c1c'
     )
 WHERE slug = 'new-dawn';
 
