@@ -28,10 +28,10 @@ const Footer = ({ farm }) => {
                 <img
                   src={displayLogo}
                   alt={`${farmName} logo`}
-                  className="w-12 h-12 rounded-xl bg-white object-contain p-1 border border-white/10 shadow-lg"
+                  className="h-16 w-16 rounded-2xl bg-white object-contain p-1.5 border border-white/10 shadow-lg"
                 />
               ) : (
-                <div className="w-12 h-12 rounded-full bg-[#c2410c] text-white flex items-center justify-center font-black text-xl border border-white/10 shadow-lg">
+                <div className="h-16 w-16 rounded-2xl bg-[#c2410c] text-white flex items-center justify-center font-black text-2xl border border-white/10 shadow-lg">
                   {firstLetter(farmName)}
                 </div>
               )}

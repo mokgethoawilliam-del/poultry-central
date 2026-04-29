@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { supabase } from '../../services/supabase';
+import newDawnLogo from '../../assets/new-dawn-logo.jpg';
 import { 
   BarChart3, 
   ShoppingBag, 
@@ -100,6 +101,7 @@ const Dashboard = () => {
   });
   const farmName = safeText(farmData?.name, 'The New Dawn');
   const farmSlug = safeSlug(farmData?.slug, 'new-dawn');
+  const dashboardLogo = safeText(farmData?.logo_url) || (farmSlug === 'new-dawn' ? newDawnLogo : '');
   const cmsHistoryKey = farmData?.id ? `poultry_cms_copilot_history_${farmData.id}` : null;
   const pageTitleMap = {
     Overview: 'Overview',
@@ -1528,8 +1530,8 @@ const Dashboard = () => {
       {/* ── SIDEBAR ──────────────────────────────────────────── */}
       <aside style={styles.sidebar}>
         <div style={styles.brandWrap}>
-          {farmData?.logo_url ? (
-            <img src={farmData.logo_url} alt="Logo" style={styles.logoImg} />
+          {dashboardLogo ? (
+            <img src={dashboardLogo} alt={`${farmName} logo`} style={styles.logoImg} />
           ) : (
             <div style={styles.logo}>{firstLetter(farmName)}</div>
           )}
@@ -1583,7 +1585,11 @@ const Dashboard = () => {
             {/* Profile Dropdown */}
             <div style={{ position: 'relative' }}>
               <button style={styles.topProfileBtn} onClick={() => setShowProfileMenu(!showProfileMenu)}>
-                <div style={styles.topAvatar}>{firstLetter(farmName, 'U')}</div>
+                {dashboardLogo ? (
+                  <img src={dashboardLogo} alt={`${farmName} logo`} style={styles.topAvatarImg} />
+                ) : (
+                  <div style={styles.topAvatar}>{firstLetter(farmName, 'U')}</div>
+                )}
                 <ChevronDown size={14} />
               </button>
               {showProfileMenu && (
@@ -2202,7 +2208,7 @@ const Dashboard = () => {
                     <div style={styles.formGroup}>
                       <label style={styles.label}>Farm Logo</label>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        {farmData?.logo_url && <img src={farmData.logo_url} alt="Logo" style={{ height: '40px', width: '40px', borderRadius: '8px', objectFit: 'contain', border: '1px solid #efe8dc' }} />}
+                        {dashboardLogo && <img src={dashboardLogo} alt={`${farmName} logo`} style={{ height: '54px', width: '54px', borderRadius: '14px', objectFit: 'contain', background: '#fff', padding: '6px', border: '1px solid #efe8dc' }} />}
                         <label style={{ ...styles.primaryBtn, cursor: 'pointer', flex: 1, textAlign: 'center' }}>
                           {isUploading === 'logo' ? 'Uploading...' : 'Upload New Logo'}
                           <input type="file" hidden accept="image/*" onChange={e => handleFileUpload(e, 'logo')} />
@@ -2818,8 +2824,8 @@ const styles = {
   page: { minHeight: '100vh', display: 'grid', gridTemplateColumns: '280px 1fr', background: '#f7f4ee', color: '#183126', fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
   sidebar: { background: '#143728', color: '#eef5f1', padding: '24px 18px', display: 'flex', flexDirection: 'column', borderRight: '1px solid rgba(255,255,255,0.08)', position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' },
   brandWrap: { display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '28px' },
-  logoImg: { height: '40px', width: '40px', borderRadius: '12px', objectFit: 'contain', background: '#fff', padding: '4px' },
-  logo: { width: '46px', height: '46px', borderRadius: '50%', background: '#d5b66f', color: '#143728', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '18px' },
+  logoImg: { height: '60px', width: '60px', borderRadius: '16px', objectFit: 'contain', background: '#fff', padding: '6px', boxShadow: '0 10px 24px rgba(0,0,0,0.18)' },
+  logo: { width: '60px', height: '60px', borderRadius: '16px', background: '#d5b66f', color: '#143728', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '24px', boxShadow: '0 10px 24px rgba(0,0,0,0.18)' },
   brandTitle: { fontWeight: 800, fontSize: '18px' },
   brandSub: { color: '#b7c9c0', fontSize: '13px', marginTop: '4px' },
   nav: { display: 'grid', gap: '4px' },
@@ -2886,6 +2892,7 @@ const styles = {
   brandingSubText: { fontSize: '9px', color: '#b7c9c0', fontWeight: 700, opacity: 0.8 },
   topProfileBtn: { display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 10px', borderRadius: '12px', border: '1px solid #d8d0c1', background: '#fff', cursor: 'pointer', color: '#183126' },
   topAvatar: { width: '28px', height: '28px', borderRadius: '8px', background: '#1d4d35', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 900 },
+  topAvatarImg: { width: '40px', height: '40px', borderRadius: '12px', objectFit: 'contain', background: '#fff', padding: '4px', border: '1px solid #efe8dc' },
   dropdownMenu: { position: 'absolute', top: 'calc(100% + 10px)', right: 0, width: '220px', background: '#fff', borderRadius: '18px', boxShadow: '0 15px 35px rgba(0,0,0,0.1)', border: '1px solid #e5ddd0', padding: '8px', zIndex: 1000 },
   dropdownHeader: { padding: '12px 14px', borderBottom: '1px solid #f1ebe1', marginBottom: '8px' },
   dropdownName: { fontSize: '14px', fontWeight: 800, color: '#183126' },

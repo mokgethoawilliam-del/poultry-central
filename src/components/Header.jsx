@@ -51,10 +51,10 @@ const Header = ({ farm }) => {
               <img
                 src={displayLogo}
                 alt={`${farmName} logo`}
-                className="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-white object-contain p-1 border border-[#e6dfd1] shadow-lg group-hover:scale-110 transition-transform"
+                className="h-14 w-14 md:h-16 md:w-16 rounded-2xl bg-white object-contain p-1.5 border border-[#e6dfd1] shadow-lg group-hover:scale-105 transition-transform"
               />
             ) : (
-              <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-[#c2410c] text-white flex items-center justify-center font-bold text-lg shadow-lg group-hover:scale-110 transition-transform">
+                <div className="h-14 w-14 md:h-16 md:w-16 rounded-2xl bg-[#c2410c] text-white flex items-center justify-center font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">
                 {firstLetter(farmName)}
               </div>
             )}

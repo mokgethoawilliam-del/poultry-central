@@ -162,11 +162,11 @@ export default function Home() {
               <img
                 src={displayLogo}
                 alt={farmName}
-                className="h-11 w-11 shrink-0 rounded-2xl bg-white object-contain p-1 shadow-lg"
+                className="h-14 w-14 shrink-0 rounded-2xl bg-white object-contain p-1.5 shadow-lg"
               />
             ) : (
               <div
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg font-black text-white shadow-lg"
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-xl font-black text-white shadow-lg"
                 style={{ backgroundColor: primaryColor }}
               >
                 {farmName.charAt(0)}
