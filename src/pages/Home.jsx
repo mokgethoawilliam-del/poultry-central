@@ -23,7 +23,7 @@ import StorefrontLegalModal from "../components/StorefrontLegalModal";
 const fallbackFarm = {
   name: "The New Dawn Poultry Farm",
   slug: "new-dawn",
-  primary_color: "#1d4d35",
+  primary_color: "#c2410c",
   site_title: "Fresh poultry in Polokwane",
   hero_subtitle:
     "Premium farm-raised poultry, fresh eggs, and day-old chicks supplied with care for families, resellers, and local events.",
@@ -178,11 +178,11 @@ export default function Home() {
           <div className="hidden items-center gap-8 lg:flex">
             {navLinks.map((link) =>
               link.to ? (
-                <Link key={link.label} to={link.to} className="text-sm font-black hover:text-[#1d4d35]">
+                <Link key={link.label} to={link.to} className="text-sm font-black hover:text-[#c2410c]">
                   {link.label}
                 </Link>
               ) : (
-                <a key={link.label} href={link.href} className="text-sm font-black hover:text-[#1d4d35]">
+                <a key={link.label} href={link.href} className="text-sm font-black hover:text-[#c2410c]">
                   {link.label}
                 </a>
               )
@@ -248,7 +248,7 @@ export default function Home() {
       <section id="home" className="relative min-h-[92vh] overflow-hidden pt-24">
         <div className="absolute inset-0">
           <img src={safeImage(farm.hero_image_url, heroImage)} alt={farmName} className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#102419]/95 via-[#102419]/78 to-[#102419]/18" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#451a03]/95 via-[#451a03]/78 to-[#451a03]/18" />
         </div>
 
         <div className="relative z-10 mx-auto grid min-h-[calc(92vh-6rem)] max-w-[1200px] items-center gap-12 px-[5%] py-16 lg:grid-cols-[1.05fr_0.95fr]">
@@ -334,7 +334,7 @@ export default function Home() {
               <p className="text-xs font-black uppercase tracking-[0.25em] text-[#8b6b2f]">Farm highlights</p>
               <h2 className="mt-4 text-4xl font-black tracking-tight md:text-6xl">Order what is fresh now</h2>
             </div>
-            <Link to={`/${farmSlug}/products`} className="flex items-center gap-2 text-sm font-black text-[#1d4d35]">
+            <Link to={`/${farmSlug}/products`} className="flex items-center gap-2 text-sm font-black text-[#c2410c]">
               View all products
               <ArrowRight size={18} />
             </Link>
@@ -398,7 +398,7 @@ export default function Home() {
                   "{safeText(testimonial.quote, "Reliable service and fresh poultry.")}"
                 </blockquote>
                 <figcaption className="mt-8 flex items-center gap-4 border-t border-[#e6dfd1] pt-6">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1d4d35] font-black text-white">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#c2410c] font-black text-white">
                     {safeText(testimonial.author_name, "C").charAt(0)}
                   </div>
                   <div>
@@ -414,7 +414,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="bg-[#102419] py-16 text-white">
+      <footer className="bg-[#451a03] py-16 text-white">
         <div className="mx-auto grid max-w-[1200px] gap-10 px-[5%] md:grid-cols-[1.2fr_0.8fr_1fr]">
           <div>
             <p className="text-2xl font-black">{farmName}</p>
@@ -473,3 +473,4 @@ export default function Home() {
     </div>
   );
 }
+

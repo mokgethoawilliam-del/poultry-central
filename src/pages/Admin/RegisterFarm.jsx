@@ -96,10 +96,10 @@ export default function RegisterFarm() {
   };
 
   return (
-    <div className="min-h-screen bg-[#102419] px-4 py-10 text-white flex items-center justify-center">
+    <div className="min-h-screen bg-[#451a03] px-4 py-10 text-white flex items-center justify-center">
       <div className="w-full max-w-5xl grid lg:grid-cols-[0.95fr_1.05fr] gap-10 items-center">
         <div>
-          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[#d6c27c] text-[#102419] mb-8">
+          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[#d6c27c] text-[#451a03] mb-8">
             <Sprout size={28} />
           </div>
           <p className="text-xs font-black uppercase tracking-[0.25em] text-[#d6c27c] mb-5">Poultry Central SaaS</p>
@@ -125,7 +125,7 @@ export default function RegisterFarm() {
           )}
 
           {siteUrl && (
-            <div className="mb-6 rounded-2xl border border-[#d6c27c]/40 bg-[#fcfaf5] p-4 text-sm font-bold text-[#1d4d35]">
+            <div className="mb-6 rounded-2xl border border-[#d6c27c]/40 bg-[#fcfaf5] p-4 text-sm font-bold text-[#c2410c]">
               Farm registered. Your site is live at {siteUrl}
             </div>
           )}
@@ -139,7 +139,7 @@ export default function RegisterFarm() {
                   required
                   value={farmName}
                   onChange={(e) => setFarmName(e.target.value)}
-                  className="w-full rounded-2xl border border-[#d8d0c1] bg-[#fcfaf5] py-4 pl-12 pr-4 font-bold outline-none focus:border-[#1d4d35]"
+                  className="w-full rounded-2xl border border-[#d8d0c1] bg-[#fcfaf5] py-4 pl-12 pr-4 font-bold outline-none focus:border-[#c2410c]"
                   placeholder="e.g. Fabri Poultry"
                 />
               </div>
@@ -155,7 +155,7 @@ export default function RegisterFarm() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-2xl border border-[#d8d0c1] bg-[#fcfaf5] py-4 pl-12 pr-4 font-bold outline-none focus:border-[#1d4d35]"
+                  className="w-full rounded-2xl border border-[#d8d0c1] bg-[#fcfaf5] py-4 pl-12 pr-4 font-bold outline-none focus:border-[#c2410c]"
                   placeholder="owner@farm.co.za"
                 />
               </div>
@@ -171,7 +171,7 @@ export default function RegisterFarm() {
                   minLength={6}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-2xl border border-[#d8d0c1] bg-[#fcfaf5] py-4 pl-12 pr-4 font-bold outline-none focus:border-[#1d4d35]"
+                  className="w-full rounded-2xl border border-[#d8d0c1] bg-[#fcfaf5] py-4 pl-12 pr-4 font-bold outline-none focus:border-[#c2410c]"
                   placeholder="Choose a secure password"
                 />
               </div>
@@ -180,17 +180,18 @@ export default function RegisterFarm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-2xl bg-[#1d4d35] py-4 font-black text-white shadow-xl flex items-center justify-center gap-3 disabled:opacity-60"
+              className="w-full rounded-2xl bg-[#c2410c] py-4 font-black text-white shadow-xl flex items-center justify-center gap-3 disabled:opacity-60"
             >
               {loading ? <Loader2 className="animate-spin" size={20} /> : <>Launch My Farm <ArrowRight size={20} /></>}
             </button>
           </form>
 
           <p className="mt-8 text-center text-sm font-bold text-[#66756d]">
-            Already registered? <Link to="/admin/login" className="text-[#1d4d35]">Sign in</Link>
+            Already registered? <Link to="/admin/login" className="text-[#c2410c]">Sign in</Link>
           </p>
         </div>
       </div>
     </div>
   );
 }
+

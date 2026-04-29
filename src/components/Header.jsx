@@ -52,7 +52,7 @@ const Header = ({ farm }) => {
                 className="w-10 h-10 md:w-11 md:h-11 rounded-full object-cover border border-[#e6dfd1] shadow-lg group-hover:scale-110 transition-transform"
               />
             ) : (
-              <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-[#1d4d35] text-white flex items-center justify-center font-bold text-lg shadow-lg group-hover:scale-110 transition-transform">
+              <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-[#c2410c] text-white flex items-center justify-center font-bold text-lg shadow-lg group-hover:scale-110 transition-transform">
                 {firstLetter(farmName)}
               </div>
             )}
@@ -73,7 +73,7 @@ const Header = ({ farm }) => {
                 <a
                   key={link.name}
                   href="#home"
-                  className="text-[15px] font-bold transition-all hover:text-[#1d4d35] text-[#183126]"
+                  className="text-[15px] font-bold transition-all hover:text-[#c2410c] text-[#183126]"
                 >
                   {link.name}
                 </a>
@@ -81,8 +81,8 @@ const Header = ({ farm }) => {
                 <Link
                   key={link.name}
                   to={link.path}
-                  className={`text-[15px] font-bold transition-all hover:text-[#1d4d35] ${
-                    location.pathname === link.path ? 'text-[#1d4d35]' : 'text-[#183126]'
+                  className={`text-[15px] font-bold transition-all hover:text-[#c2410c] ${
+                    location.pathname === link.path ? 'text-[#c2410c]' : 'text-[#183126]'
                   }`}
                 >
                   {link.name}
@@ -101,7 +101,7 @@ const Header = ({ farm }) => {
             </button>
             <Link
               to={`/${farmSlug}/order`}
-              className="px-6 py-3 rounded-full bg-[#1d4d35] text-white font-extrabold text-sm hover:bg-[#153a28] transition-all shadow-md active:scale-95"
+              className="px-6 py-3 rounded-full bg-[#c2410c] text-white font-extrabold text-sm hover:bg-[#9a3412] transition-all shadow-md active:scale-95"
             >
               Order Now
             </Link>
@@ -124,7 +124,7 @@ const Header = ({ farm }) => {
                 key={link.name}
                 to={link.path}
                 onClick={() => setMenuOpen(false)}
-                className="block text-lg font-bold text-[#183126] hover:text-[#1d4d35] px-2"
+                className="block text-lg font-bold text-[#183126] hover:text-[#c2410c] px-2"
               >
                 {link.name}
               </Link>
@@ -143,3 +143,4 @@ const Header = ({ farm }) => {
 };
 
 export default Header;
+

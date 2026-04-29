@@ -3,7 +3,7 @@
 :root {
   /* Dynamic Premium Palette from User Design */
   --bg-cream: #fcfaf5;
-  --primary-green: #1d4d35;
+  --primary-green: #c2410c;
   --primary-text: #183126;
   --accent-gold: #8b6b2f;
   --accent-gold-light: #c2ab67;
@@ -33,3 +33,4 @@ img {
   max-width: 100%;
   height: auto;
 }
+

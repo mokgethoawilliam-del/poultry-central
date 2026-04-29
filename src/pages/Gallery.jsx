@@ -36,7 +36,7 @@ export default function Gallery() {
 
   return (
     <div className="pt-24 bg-[#fcfaf5] min-h-screen">
-      <section className="bg-[#1d4d35] pt-32 pb-24 text-white relative overflow-hidden">
+      <section className="bg-[#c2410c] pt-32 pb-24 text-white relative overflow-hidden">
         <div className="container mx-auto px-[5%] max-w-[1200px] relative z-10">
           <span className="uppercase tracking-[0.3em] font-black text-[#d6c27c] mb-6 inline-block text-sm">Gallery</span>
           <h1 className="text-5xl md:text-7xl font-black mb-8 tracking-tight">
@@ -71,7 +71,7 @@ export default function Gallery() {
           </div>
         ) : (
           <div className="text-center py-24 bg-white rounded-[40px] border border-dashed border-[#e6dfd1] shadow-sm">
-            <div className="w-20 h-20 mx-auto rounded-full bg-[#fcfaf5] flex items-center justify-center text-[#1d4d35] mb-6 border border-[#e6dfd1]">
+            <div className="w-20 h-20 mx-auto rounded-full bg-[#fcfaf5] flex items-center justify-center text-[#c2410c] mb-6 border border-[#e6dfd1]">
               <ImageIcon size={34} />
             </div>
             <h2 className="text-3xl font-black text-[#183126] mb-4">Gallery coming soon</h2>
@@ -115,3 +115,4 @@ export default function Gallery() {
     </div>
   );
 }
+

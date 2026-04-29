@@ -39,14 +39,14 @@ const Products = () => {
 
   if (loading) return (
     <div className="h-screen w-full flex items-center justify-center bg-[#fcfaf5]">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#1d4d35]"></div>
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#c2410c]"></div>
     </div>
   );
 
   return (
     <div className="pt-24 bg-[#fcfaf5]">
       {/* Header */}
-      <section className="bg-[#1d4d35] pt-32 pb-24 text-white text-center relative overflow-hidden">
+      <section className="bg-[#c2410c] pt-32 pb-24 text-white text-center relative overflow-hidden">
         <div className="container mx-auto px-[5%] max-w-[1200px] relative z-10">
           <span className="uppercase tracking-[0.3em] font-black text-[#d6c27c] mb-6 inline-block text-sm">Farm Fresh Selection</span>
           <h1 className="text-5xl md:text-7xl font-black mb-8 leading-tight tracking-tight">Our <span className="text-[#fcfaf5] italic">Products</span></h1>
@@ -67,7 +67,7 @@ const Products = () => {
                 key={cat}
                 onClick={() => setFilter(cat)}
                 className={`px-8 py-3 rounded-full font-black uppercase tracking-widest text-[11px] transition-all border-2 ${
-                  filter === cat ? 'bg-[#1d4d35] text-white border-[#1d4d35]' : 'bg-transparent text-[#183126] border-[#183126]/10 hover:border-[#1d4d35]'
+                  filter === cat ? 'bg-[#c2410c] text-white border-[#c2410c]' : 'bg-transparent text-[#183126] border-[#183126]/10 hover:border-[#c2410c]'
                 }`}
               >
                 {cat}
@@ -102,7 +102,7 @@ const Products = () => {
                 <div className="p-10">
                   <div className="flex justify-between items-start mb-6">
                     <h3 className="text-3xl font-black text-[#183126] leading-tight">{safeText(product.name, 'Farm Product')}</h3>
-                    <p className="font-black text-2xl text-[#1d4d35]">
+                    <p className="font-black text-2xl text-[#c2410c]">
                       {displayPrice(product)}
                     </p>
                   </div>
@@ -111,13 +111,13 @@ const Products = () => {
                   <div className="flex flex-col sm:flex-row items-center gap-4">
                     <Link 
                       to={`/${farmSlug}/order?product=${product.id}`}
-                      className="w-full sm:w-auto px-10 py-5 bg-[#1d4d35] text-white font-black rounded-full hover:bg-[#153a28] flex-grow flex items-center justify-center gap-2 shadow-lg"
+                      className="w-full sm:w-auto px-10 py-5 bg-[#c2410c] text-white font-black rounded-full hover:bg-[#9a3412] flex-grow flex items-center justify-center gap-2 shadow-lg"
                     >
                       {product.is_price_on_request ? 'Request Quote' : 'Process Order'} <ArrowRight size={18} />
                     </Link>
                     <a 
                       href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hi ${farmName}, I'm interested in ${safeText(product.name, 'your poultry products')}.`)}`}
-                      className="w-16 h-16 rounded-full bg-[#f5f0e6] text-[#1d4d35] flex items-center justify-center hover:bg-[#1d4d35] hover:text-white transition-all shadow-md border border-[#e6dfd1]"
+                      className="w-16 h-16 rounded-full bg-[#f5f0e6] text-[#c2410c] flex items-center justify-center hover:bg-[#c2410c] hover:text-white transition-all shadow-md border border-[#e6dfd1]"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -131,7 +131,7 @@ const Products = () => {
 
           {filteredProducts.length === 0 && (
             <div className="text-center py-32 bg-[#f5f0e6] rounded-[40px] border border-dashed border-[#e6dfd1]">
-              <AlertCircle size={64} className="mx-auto text-[#1d4d35] opacity-20 mb-6" />
+              <AlertCircle size={64} className="mx-auto text-[#c2410c] opacity-20 mb-6" />
               <p className="text-2xl font-black text-[#183126]">No products available in this category.</p>
               <p className="text-[#5f6c65] mt-2 font-medium">Please check back later or contact us for advance bookings.</p>
             </div>
@@ -171,3 +171,4 @@ const Products = () => {
 };
 
 export default Products;
+

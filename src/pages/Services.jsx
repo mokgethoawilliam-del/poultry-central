@@ -75,7 +75,7 @@ const Services = () => {
   return (
     <div className="pt-24 bg-[#fcfaf5] min-h-screen">
       {/* Hero Header */}
-      <section className="bg-[#1d4d35] pt-32 pb-24 text-white relative overflow-hidden">
+      <section className="bg-[#c2410c] pt-32 pb-24 text-white relative overflow-hidden">
         <div className="container mx-auto px-[5%] max-w-[1200px] relative z-10">
           <span className="uppercase tracking-[0.3em] font-black text-[#d6c27c] mb-6 inline-block text-sm italic">Our Farm Support</span>
           <h1 className="text-5xl md:text-7xl font-black mb-8 leading-tight tracking-tight">Farm <span className="text-[#fcfaf5] italic">Services</span></h1>
@@ -94,7 +94,7 @@ const Services = () => {
             <ul className="grid md:grid-cols-2 gap-5">
               {serviceNames.map((service) => (
                 <li key={service} className="flex items-center gap-4 text-xl font-black text-[#183126]">
-                  <CheckCircle2 size={24} className="text-[#1d4d35] flex-shrink-0" />
+                  <CheckCircle2 size={24} className="text-[#c2410c] flex-shrink-0" />
                   {service}
                 </li>
               ))}
@@ -103,9 +103,9 @@ const Services = () => {
         ) : (
           <div className="grid md:grid-cols-2 gap-10 mb-32">
             {fallbackServices.map((service, index) => (
-              <div key={index} className="bg-white p-10 md:p-14 rounded-[40px] shadow-sm border border-[#e6dfd1] hover:shadow-2xl hover:border-[#1d4d35] transition-all group relative overflow-hidden">
+              <div key={index} className="bg-white p-10 md:p-14 rounded-[40px] shadow-sm border border-[#e6dfd1] hover:shadow-2xl hover:border-[#c2410c] transition-all group relative overflow-hidden">
                 <div className="relative z-10">
-                  <div className="w-16 h-16 rounded-2xl bg-[#fcfaf5] border border-[#e6dfd1] text-[#1d4d35] flex items-center justify-center mb-8 shadow-sm group-hover:scale-110 group-hover:bg-[#1d4d35] group-hover:text-white transition-all">
+                  <div className="w-16 h-16 rounded-2xl bg-[#fcfaf5] border border-[#e6dfd1] text-[#c2410c] flex items-center justify-center mb-8 shadow-sm group-hover:scale-110 group-hover:bg-[#c2410c] group-hover:text-white transition-all">
                     {service.icon}
                   </div>
                   <h3 className="text-3xl font-black text-[#183126] mb-6 tracking-tight uppercase">{service.title}</h3>
@@ -122,12 +122,12 @@ const Services = () => {
                   </div>
                   <button 
                     onClick={() => openWhatsApp(service.title)}
-                    className="w-full sm:w-auto px-10 py-5 bg-[#1d4d35] text-white font-black rounded-full shadow-lg hover:bg-[#153a28] flex items-center justify-center gap-2 transition-all"
+                    className="w-full sm:w-auto px-10 py-5 bg-[#c2410c] text-white font-black rounded-full shadow-lg hover:bg-[#9a3412] flex items-center justify-center gap-2 transition-all"
                   >
                     Enquire Now <ArrowRight size={18} />
                   </button>
                 </div>
-                <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-[#1d4d35] opacity-[0.02] rounded-full pointer-events-none group-hover:opacity-5 transition-all"></div>
+                <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-[#c2410c] opacity-[0.02] rounded-full pointer-events-none group-hover:opacity-5 transition-all"></div>
               </div>
             ))}
           </div>
@@ -175,3 +175,4 @@ const Services = () => {
 };
 
 export default Services;
+

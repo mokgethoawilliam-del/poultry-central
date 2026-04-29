@@ -31,7 +31,7 @@ const Contact = () => {
     <div className="pt-48 pb-24 bg-[#fcfaf5] min-h-screen flex items-center justify-center">
       <div className="container mx-auto px-[5%] max-w-[800px] text-center">
         <div className="bg-white p-12 md:p-20 rounded-[40px] shadow-2xl border border-[#e6dfd1] animate-fadeIn">
-          <div className="w-24 h-24 bg-[#1d4d35] rounded-full flex items-center justify-center text-white mx-auto mb-10 shadow-xl">
+          <div className="w-24 h-24 bg-[#c2410c] rounded-full flex items-center justify-center text-white mx-auto mb-10 shadow-xl">
             <CheckCircle2 size={48} />
           </div>
           <h1 className="text-4xl md:text-5xl font-black text-[#183126] mb-6">Message Sent!</h1>
@@ -51,7 +51,7 @@ const Contact = () => {
 
   return (
     <div className="pt-24 bg-[#fcfaf5] min-h-screen">
-       <section className="bg-[#1d4d35] pt-32 pb-24 text-white relative overflow-hidden">
+       <section className="bg-[#c2410c] pt-32 pb-24 text-white relative overflow-hidden">
         <div className="container mx-auto px-[5%] max-w-[1200px] relative z-10">
           <span className="uppercase tracking-[0.3em] font-black text-[#d6c27c] mb-6 inline-block text-sm uppercase italic tracking-widest">Connect with {farmName}</span>
           <h1 className="text-5xl md:text-7xl font-black mb-6 tracking-tight">Get in <span className="text-[#fcfaf5] italic">Touch</span></h1>
@@ -72,7 +72,7 @@ const Contact = () => {
               
               <div className="space-y-8">
                 <div className="flex gap-6 items-start">
-                  <div className="w-14 h-14 bg-[#fcfaf5] rounded-2xl flex items-center justify-center text-[#1d4d35] flex-shrink-0 shadow-sm border border-[#e6dfd1]">
+                  <div className="w-14 h-14 bg-[#fcfaf5] rounded-2xl flex items-center justify-center text-[#c2410c] flex-shrink-0 shadow-sm border border-[#e6dfd1]">
                     <MapPin size={24} />
                   </div>
                   <div>
@@ -82,7 +82,7 @@ const Contact = () => {
                 </div>
 
                 <div className="flex gap-6 items-start">
-                  <div className="w-14 h-14 bg-[#fcfaf5] rounded-2xl flex items-center justify-center text-[#1d4d35] flex-shrink-0 shadow-sm border border-[#e6dfd1]">
+                  <div className="w-14 h-14 bg-[#fcfaf5] rounded-2xl flex items-center justify-center text-[#c2410c] flex-shrink-0 shadow-sm border border-[#e6dfd1]">
                     <Clock size={24} />
                   </div>
                   <div>
@@ -92,7 +92,7 @@ const Contact = () => {
                 </div>
 
                 <div className="flex gap-6 items-start">
-                  <div className="w-14 h-14 bg-[#fcfaf5] rounded-2xl flex items-center justify-center text-[#1d4d35] flex-shrink-0 shadow-sm border border-[#e6dfd1]">
+                  <div className="w-14 h-14 bg-[#fcfaf5] rounded-2xl flex items-center justify-center text-[#c2410c] flex-shrink-0 shadow-sm border border-[#e6dfd1]">
                     <Phone size={24} />
                   </div>
                   <div>
@@ -103,7 +103,7 @@ const Contact = () => {
 
                 {safeText(contact.email) && (
                   <div className="flex gap-6 items-start">
-                    <div className="w-14 h-14 bg-[#fcfaf5] rounded-2xl flex items-center justify-center text-[#1d4d35] flex-shrink-0 shadow-sm border border-[#e6dfd1]">
+                    <div className="w-14 h-14 bg-[#fcfaf5] rounded-2xl flex items-center justify-center text-[#c2410c] flex-shrink-0 shadow-sm border border-[#e6dfd1]">
                       <Mail size={24} />
                     </div>
                     <div>
@@ -144,46 +144,46 @@ const Contact = () => {
               <form onSubmit={handleSubmit} className="space-y-8">
                 <div className="grid md:grid-cols-2 gap-8">
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1d4d35]">Your Name</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#c2410c]">Your Name</label>
                     <input 
                       required
                       placeholder="e.g. Marcus Moagi"
-                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#1d4d35] outline-none transition-all"
+                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#c2410c] outline-none transition-all"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1d4d35]">Email Address</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#c2410c]">Email Address</label>
                     <input 
                       required
                       type="email"
                       placeholder="marcus@example.com"
-                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#1d4d35] outline-none transition-all"
+                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#c2410c] outline-none transition-all"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1d4d35]">Subject</label>
+                  <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#c2410c]">Subject</label>
                   <input 
                     required
                     placeholder="e.g. Bulk Egg Inquiry"
-                    className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#1d4d35] outline-none transition-all"
+                    className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#c2410c] outline-none transition-all"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1d4d35]">Message Details</label>
+                  <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#c2410c]">Message Details</label>
                   <textarea 
                     required
                     rows="5"
                     placeholder="Tell us about your needs..."
-                    className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-3xl font-bold text-[#183126] focus:ring-2 focus:ring-[#1d4d35] outline-none transition-all resize-none"
+                    className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-3xl font-bold text-[#183126] focus:ring-2 focus:ring-[#c2410c] outline-none transition-all resize-none"
                   />
                 </div>
 
                 <button 
                   type="submit"
-                  className="w-full py-6 bg-[#1d4d35] text-white font-black text-xl rounded-full shadow-2xl hover:scale-[1.02] flex items-center justify-center gap-3 transition-all"
+                  className="w-full py-6 bg-[#c2410c] text-white font-black text-xl rounded-full shadow-2xl hover:scale-[1.02] flex items-center justify-center gap-3 transition-all"
                 >
                   Send Inquiry <Send size={22} />
                 </button>
@@ -197,3 +197,4 @@ const Contact = () => {
 };
 
 export default Contact;
+

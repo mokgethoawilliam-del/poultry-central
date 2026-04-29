@@ -37,7 +37,7 @@ export default function About() {
 
   return (
     <div className="pt-24 bg-[#fcfaf5] min-h-screen">
-      <section className="bg-[#1d4d35] pt-32 pb-24 text-white relative overflow-hidden">
+      <section className="bg-[#c2410c] pt-32 pb-24 text-white relative overflow-hidden">
         <div className="container mx-auto px-[5%] max-w-[1200px] relative z-10">
           <span className="uppercase tracking-[0.3em] font-black text-[#d6c27c] mb-6 inline-block text-sm">About the Farm</span>
           <h1 className="text-5xl md:text-7xl font-black mb-8 tracking-tight">
@@ -57,7 +57,7 @@ export default function About() {
         <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-12 items-center">
           <div className="space-y-8">
             <div className="inline-flex items-center gap-3 rounded-full border border-[#e6dfd1] bg-white px-5 py-3 shadow-sm">
-              <Sprout size={18} className="text-[#1d4d35]" />
+              <Sprout size={18} className="text-[#c2410c]" />
               <span className="text-sm font-black uppercase tracking-widest text-[#183126]">{farmName}</span>
             </div>
 
@@ -134,3 +134,4 @@ export default function About() {
     </div>
   );
 }
+

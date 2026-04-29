@@ -153,7 +153,7 @@ const Order = () => {
 
   if (loading) return (
     <div className="h-screen w-full flex items-center justify-center bg-[#fcfaf5]">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#1d4d35]"></div>
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#c2410c]"></div>
     </div>
   );
 
@@ -161,12 +161,12 @@ const Order = () => {
     <div className="pt-32 pb-24 bg-[#fcfaf5] min-h-screen">
       <div className="container mx-auto px-[5%] max-w-[800px] text-center">
         <div className="bg-white p-10 md:p-16 rounded-[40px] shadow-2xl border border-[#e6dfd1] animate-fadeIn">
-          <div className="w-20 h-20 bg-[#1d4d35] rounded-full flex items-center justify-center text-white mx-auto mb-8 shadow-xl">
+          <div className="w-20 h-20 bg-[#c2410c] rounded-full flex items-center justify-center text-white mx-auto mb-8 shadow-xl">
             <CheckCircle2 size={40} />
           </div>
           
           <h1 className="text-3xl md:text-4xl font-black text-[#183126] mb-4">Order {activeOrder?.status === 'pending' ? 'Received' : 'Updated'}!</h1>
-          <div className="bg-[#fcfaf5] py-3 px-6 rounded-full inline-block font-black text-[#1d4d35] text-sm mb-8 border border-[#e6dfd1]">
+          <div className="bg-[#fcfaf5] py-3 px-6 rounded-full inline-block font-black text-[#c2410c] text-sm mb-8 border border-[#e6dfd1]">
             REF: {activeOrder?.order_number}
           </div>
 
@@ -178,11 +178,11 @@ const Order = () => {
                  const isPast = ['pending', 'confirmed', 'ready', 'completed'].indexOf(activeOrder?.status) >= idx;
                  return (
                    <div key={s} className="flex flex-col items-center gap-2 flex-1 relative">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold z-10 ${isPast ? 'bg-[#1d4d35] text-white' : 'bg-gray-200 text-gray-400'}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold z-10 ${isPast ? 'bg-[#c2410c] text-white' : 'bg-gray-200 text-gray-400'}`}>
                          {isPast ? '✓' : idx + 1}
                       </div>
-                      <span className={`text-[9px] uppercase font-black tracking-widest ${isActive ? 'text-[#1d4d35]' : 'text-gray-400'}`}>{s}</span>
-                      {idx < 3 && <div className={`absolute top-4 left-1/2 w-full h-[2px] -z-0 ${isPast ? 'bg-[#1d4d35]' : 'bg-gray-200'}`}></div>}
+                      <span className={`text-[9px] uppercase font-black tracking-widest ${isActive ? 'text-[#c2410c]' : 'text-gray-400'}`}>{s}</span>
+                      {idx < 3 && <div className={`absolute top-4 left-1/2 w-full h-[2px] -z-0 ${isPast ? 'bg-[#c2410c]' : 'bg-gray-200'}`}></div>}
                    </div>
                  );
                })}
@@ -209,7 +209,7 @@ const Order = () => {
                    🚜 I'M AT THE FARM / I'VE ARRIVED
                  </button>
                ) : (
-                 <div className="py-6 bg-[#1d4d35] text-white font-black rounded-3xl flex items-center justify-center gap-3 shadow-inner">
+                 <div className="py-6 bg-[#c2410c] text-white font-black rounded-3xl flex items-center justify-center gap-3 shadow-inner">
                    <CheckCircle2 size={20} /> FARM STAFF NOTIFIED
                  </div>
                )}
@@ -243,7 +243,7 @@ const Order = () => {
 
   return (
     <div className="pt-24 bg-[#fcfaf5] min-h-screen">
-      <section className="bg-[#1d4d35] pt-32 pb-24 text-white relative overflow-hidden">
+      <section className="bg-[#c2410c] pt-32 pb-24 text-white relative overflow-hidden">
         <div className="container mx-auto px-[5%] max-w-[1200px] relative z-10">
           <h1 className="text-5xl md:text-7xl font-black mb-6 tracking-tight">Secure Your <span className="text-[#fcfaf5] italic">Order</span></h1>
           <p className="text-[#d3ddd7] text-xl max-w-2xl font-medium">
@@ -261,20 +261,20 @@ const Order = () => {
               <form onSubmit={handleSubmit} className="space-y-10">
                 <div className="grid md:grid-cols-2 gap-10">
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1d4d35]">Your Full Name</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#c2410c]">Your Full Name</label>
                     <input 
                       required
-                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#1d4d35] outline-none transition-all"
+                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#c2410c] outline-none transition-all"
                       placeholder="e.g. Sipho Nkosi"
                       value={formData.customer_name}
                       onChange={e => setFormData({...formData, customer_name: e.target.value})}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1d4d35]">Phone Number (WhatsApp)</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#c2410c]">Phone Number (WhatsApp)</label>
                     <input 
                       required
-                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#1d4d35] outline-none transition-all"
+                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#c2410c] outline-none transition-all"
                       placeholder="e.g. 015 004 0130"
                       value={formData.customer_phone}
                       onChange={e => setFormData({...formData, customer_phone: e.target.value})}
@@ -284,9 +284,9 @@ const Order = () => {
 
                 <div className="grid md:grid-cols-2 gap-10">
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1d4d35]">Select Product</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#c2410c]">Select Product</label>
                     <select 
-                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#1d4d35] outline-none transition-all appearance-none"
+                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#c2410c] outline-none transition-all appearance-none"
                       value={formData.product_id}
                       onChange={e => setFormData({...formData, product_id: e.target.value})}
                     >
@@ -299,11 +299,11 @@ const Order = () => {
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1d4d35]">Quantity</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#c2410c]">Quantity</label>
                     <input 
                       type="number"
                       min="1"
-                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#1d4d35] outline-none transition-all"
+                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#c2410c] outline-none transition-all"
                       value={formData.quantity}
                       onChange={e => setFormData({...formData, quantity: parseInt(e.target.value) || 1})}
                     />
@@ -311,13 +311,13 @@ const Order = () => {
                 </div>
 
                 <div className="space-y-6">
-                  <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1d4d35] block">Fulfillment Method</label>
+                  <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#c2410c] block">Fulfillment Method</label>
                   <div className="grid grid-cols-2 gap-6">
                     <button
                       type="button"
                       onClick={() => setFormData({...formData, fulfillment_method: 'pickup'})}
                       className={`p-6 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all ${
-                        formData.fulfillment_method === 'pickup' ? 'bg-[#1d4d35] border-[#1d4d35] text-white shadow-lg' : 'bg-white border-[#e6dfd1] text-[#183126] hover:border-[#1d4d35]'
+                        formData.fulfillment_method === 'pickup' ? 'bg-[#c2410c] border-[#c2410c] text-white shadow-lg' : 'bg-white border-[#e6dfd1] text-[#183126] hover:border-[#c2410c]'
                       }`}
                     >
                       <ShoppingBag size={24} />
@@ -327,7 +327,7 @@ const Order = () => {
                       type="button"
                       onClick={() => setFormData({...formData, fulfillment_method: 'delivery'})}
                       className={`p-6 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all ${
-                        formData.fulfillment_method === 'delivery' ? 'bg-[#1d4d35] border-[#1d4d35] text-white shadow-lg' : 'bg-white border-[#e6dfd1] text-[#183126] hover:border-[#1d4d35]'
+                        formData.fulfillment_method === 'delivery' ? 'bg-[#c2410c] border-[#c2410c] text-white shadow-lg' : 'bg-white border-[#e6dfd1] text-[#183126] hover:border-[#c2410c]'
                       }`}
                     >
                       <Truck size={24} />
@@ -338,11 +338,11 @@ const Order = () => {
 
                 {formData.fulfillment_method === 'delivery' && (
                   <div className="space-y-2 animate-fadeIn">
-                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1d4d35]">Delivery Address (Polokwane & Surroundings)</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#c2410c]">Delivery Address (Polokwane & Surroundings)</label>
                     <textarea 
                       required
                       rows="3"
-                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-3xl font-bold text-[#183126] focus:ring-2 focus:ring-[#1d4d35] outline-none transition-all resize-none"
+                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-3xl font-bold text-[#183126] focus:ring-2 focus:ring-[#c2410c] outline-none transition-all resize-none"
                       placeholder="e.g. 123 Main St, Polokwane, 0700"
                       value={formData.delivery_address}
                       onChange={e => setFormData({...formData, delivery_address: e.target.value})}
@@ -353,7 +353,7 @@ const Order = () => {
                 <div className="pt-10 border-t border-[#e6dfd1]">
                   <button 
                     disabled={submitting}
-                    className="w-full py-6 bg-[#1d4d35] text-white font-black text-xl rounded-full shadow-2xl hover:scale-[1.02] flex items-center justify-center gap-3 transition-all disabled:opacity-50"
+                    className="w-full py-6 bg-[#c2410c] text-white font-black text-xl rounded-full shadow-2xl hover:scale-[1.02] flex items-center justify-center gap-3 transition-all disabled:opacity-50"
                   >
                     {submitting ? 'Processing...' : 'Complete Order Request'}
                     <ArrowRight size={24} />
@@ -393,7 +393,7 @@ const Order = () => {
 
               <div className="bg-[#f5f0e6] p-10 rounded-[40px] border border-[#e6dfd1] space-y-6">
                 <div className="flex gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-[#1d4d35] flex-shrink-0 shadow-sm">
+                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-[#c2410c] flex-shrink-0 shadow-sm">
                     <Info size={20} />
                   </div>
                   <div>
@@ -411,3 +411,4 @@ const Order = () => {
 };
 
 export default Order;
+

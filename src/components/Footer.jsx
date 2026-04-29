@@ -29,7 +29,7 @@ const Footer = ({ farm }) => {
                   className="w-12 h-12 rounded-full object-cover border border-white/10 shadow-lg"
                 />
               ) : (
-                <div className="w-12 h-12 rounded-full bg-[#1d4d35] text-white flex items-center justify-center font-black text-xl border border-white/10 shadow-lg">
+                <div className="w-12 h-12 rounded-full bg-[#c2410c] text-white flex items-center justify-center font-black text-xl border border-white/10 shadow-lg">
                   {firstLetter(farmName)}
                 </div>
               )}
@@ -42,7 +42,7 @@ const Footer = ({ farm }) => {
               {email && (
               <a 
                 href={`mailto:${email}`} 
-                className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#1d4d35] transition-all"
+                className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#c2410c] transition-all"
               >
                 <Mail size={20} />
               </a>
@@ -50,7 +50,7 @@ const Footer = ({ farm }) => {
               {phone && (
               <a 
                 href={`tel:${phone}`} 
-                className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#1d4d35] transition-all"
+                className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#c2410c] transition-all"
               >
                 <Phone size={20} />
               </a>
@@ -110,7 +110,6 @@ const Footer = ({ farm }) => {
         <div className="pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 text-[#b9c6bf] text-sm tracking-wide">
           <p>&copy; {new Date().getFullYear()} {farmName}. Freshness Guaranteed.</p>
           <div className="flex gap-8">
-            <Link to="/admin" className="hover:text-white">Farmer Login</Link>
             <button type="button" onClick={() => setLegalView('terms')} className="hover:text-white">Terms & Conditions</button>
             <button type="button" onClick={() => setLegalView('privacy')} className="hover:text-white">Privacy Policy</button>
           </div>
@@ -142,3 +141,4 @@ const Footer = ({ farm }) => {
 };
 
 export default Footer;
+
