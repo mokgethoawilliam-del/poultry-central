@@ -493,10 +493,15 @@ const Dashboard = () => {
     setCmsCopilotError('');
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch('/api/cms-copilot', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token || ''}`,
+        },
         body: JSON.stringify({
+          farmId: farmData.id,
           prompt: cmsCopilotPrompt,
           farm: {
             name: safeText(farmData?.name),
@@ -563,10 +568,15 @@ const Dashboard = () => {
     setOpsAiError('');
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch('/api/farm-ops-ai', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token || ''}`,
+        },
         body: JSON.stringify({
+          farmId: farmData.id,
           prompt: opsAiPrompt,
           farm: {
             name: farmName,
@@ -780,6 +790,7 @@ const Dashboard = () => {
                         { id: 'netcash', icon: '💸', label: 'Netcash', sub: 'Alternative payments' },
                         { id: 'domains', icon: '🌐', label: 'Custom Domain', sub: 'Branding URL' },
                         { id: 'whatsapp', icon: '📲', label: 'WhatsApp Bot', sub: 'Notification tokens' },
+                        { id: 'ai_keys', icon: '🤖', label: 'AI Manager Keys', sub: 'Groq/Grok and Gemini' },
                       ].map(item => (
                         <button key={item.id} onClick={() => setVaultActiveSection(item.id)} style={{ background: '#fcfaf5', border: '1px solid #e5ddd0', borderRadius: '16px', padding: '1.25rem', textAlign: 'left', cursor: 'pointer', transition: 'border-color 0.2s', display: 'flex', flexDirection: 'column', gap: '6px' }}
                           onMouseEnter={e => e.currentTarget.style.borderColor = '#1d4d35'}
@@ -884,6 +895,73 @@ const Dashboard = () => {
                             else alert('WhatsApp config saved! 📲');
                           }}>
                             <Save size={16} style={{ marginRight: '8px' }} /> {isSavingVault ? 'Saving...' : 'Save WhatsApp Config'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {vaultActiveSection === 'ai_keys' && (
+                      <div>
+                        <h3 style={{ ...styles.panelTitle, marginBottom: '1.25rem' }}>🤖 AI Manager Keys</h3>
+                        <p style={{ ...styles.rowSub, marginBottom: '1rem' }}>
+                          Add your own GroqCloud or xAI Grok key as the primary AI provider, with Gemini as the fallback.
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                          <div style={styles.formGroup}>
+                            <label style={styles.label}>GroqCloud / xAI Grok Key</label>
+                            <input
+                              style={styles.input}
+                              type="password"
+                              placeholder="gsk_... or xai-..."
+                              value={farmData?.business_config?.ai_keys?.grok_api_key || ''}
+                              onChange={e => setFarmData({
+                                ...farmData,
+                                business_config: {
+                                  ...farmData.business_config,
+                                  ai_keys: {
+                                    ...farmData.business_config?.ai_keys,
+                                    grok_api_key: e.target.value,
+                                  },
+                                },
+                              })}
+                            />
+                            <p style={styles.rowSub}>Use a `gsk_...` key from console.groq.com or an xAI key from console.x.ai.</p>
+                          </div>
+                          <div style={styles.formGroup}>
+                            <label style={styles.label}>Gemini API Key</label>
+                            <input
+                              style={styles.input}
+                              type="password"
+                              placeholder="AIza..."
+                              value={farmData?.business_config?.ai_keys?.gemini_api_key || ''}
+                              onChange={e => setFarmData({
+                                ...farmData,
+                                business_config: {
+                                  ...farmData.business_config,
+                                  ai_keys: {
+                                    ...farmData.business_config?.ai_keys,
+                                    gemini_api_key: e.target.value,
+                                  },
+                                },
+                              })}
+                            />
+                            <p style={styles.rowSub}>Gemini is only used if the primary provider is missing or fails.</p>
+                          </div>
+                          <button
+                            disabled={isSavingVault}
+                            style={{ ...styles.primaryBtnLarge, background: '#1d4d35' }}
+                            onClick={async () => {
+                              setIsSavingVault(true);
+                              const { error } = await supabase
+                                .from('farms')
+                                .update({ business_config: farmData.business_config })
+                                .eq('id', farmData.id);
+                              setIsSavingVault(false);
+                              if (error) alert('Save failed: ' + error.message);
+                              else alert('AI keys saved! 🤖');
+                            }}
+                          >
+                            <Save size={16} style={{ marginRight: '8px' }} /> {isSavingVault ? 'Saving...' : 'Save AI Keys'}
                           </button>
                         </div>
                       </div>

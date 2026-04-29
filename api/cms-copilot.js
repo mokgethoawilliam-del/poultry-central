@@ -1,5 +1,5 @@
-const DEFAULT_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
-const DEFAULT_BASE_URL = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/$/, '');
+import { createClient } from '@supabase/supabase-js';
+import { generateJsonWithFallback } from './_aiProvider.js';
 
 const buildSystemPrompt = () => `
 You are a website CMS copy copilot for a poultry farm SaaS.
@@ -32,16 +32,56 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'OPENAI_API_KEY is not configured on the server.' });
-  }
-
   try {
-    const { prompt, farm } = req.body || {};
+    const authHeader = req.headers.authorization || '';
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Missing authorization header.' });
+    }
+
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
+      return res.status(500).json({ error: 'Supabase server environment is not configured.' });
+    }
+
+    const authedSupabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const adminSupabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const {
+      data: { user },
+      error: userError,
+    } = await authedSupabase.auth.getUser();
+
+    if (userError || !user) {
+      return res.status(401).json({ error: 'Unauthorized.' });
+    }
+
+    const { prompt, farm, farmId } = req.body || {};
     if (!prompt || !String(prompt).trim()) {
       return res.status(400).json({ error: 'A prompt is required.' });
     }
+    if (!farmId) {
+      return res.status(400).json({ error: 'A farmId is required.' });
+    }
+
+    const { data: ownedFarm, error: farmError } = await adminSupabase
+      .from('farms')
+      .select('id, owner_id, business_config')
+      .eq('id', farmId)
+      .single();
+
+    if (farmError || !ownedFarm) {
+      return res.status(404).json({ error: 'Farm not found.' });
+    }
+
+    if (ownedFarm.owner_id !== user.id) {
+      return res.status(403).json({ error: 'Forbidden.' });
+    }
+
+    const aiKeys = ownedFarm.business_config?.ai_keys || {};
 
     const userPrompt = `
 Business context:
@@ -57,44 +97,21 @@ Business context:
 Task:
 ${String(prompt).trim()}
 
-Also suggest:
+    Also suggest:
 - one hero image prompt
 - one about-section image prompt
 - one gallery image prompt
 `.trim();
 
-    const response = await fetch(`${DEFAULT_BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: DEFAULT_MODEL,
-        temperature: 0.8,
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: buildSystemPrompt() },
-          { role: 'user', content: userPrompt },
-        ],
-      }),
+    const { parsed, provider } = await generateJsonWithFallback({
+      systemPrompt: buildSystemPrompt(),
+      userPrompt,
+      temperature: 0.8,
+      aiKeys,
     });
 
-    const payload = await response.json();
-    if (!response.ok) {
-      return res.status(response.status).json({
-        error: payload?.error?.message || 'The AI provider could not generate storefront copy right now.',
-      });
-    }
-
-    const rawContent = payload?.choices?.[0]?.message?.content;
-    if (!rawContent) {
-      return res.status(500).json({ error: 'The AI provider returned an empty draft.' });
-    }
-
-    const parsed = JSON.parse(rawContent);
-
     return res.status(200).json({
+      provider,
       draft: {
         site_title: parsed.site_title || '',
         hero_headline: parsed.hero_headline || '',

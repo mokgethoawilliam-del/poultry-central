@@ -75,6 +75,10 @@ export default function RegisterFarm() {
             official_name: farmName,
             notifications: { email: true, whatsapp: true },
             tax_enabled: false,
+            ai_keys: {
+              grok_api_key: '',
+              gemini_api_key: '',
+            },
           },
         });
 
