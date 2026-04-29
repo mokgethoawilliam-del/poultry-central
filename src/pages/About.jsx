@@ -2,6 +2,7 @@ import React from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, MessageCircle, ShieldCheck, Sprout, Users } from 'lucide-react';
 import broilerImage from '../assets/healthy_broiler_poultry_1776000591785.png';
+import newDawnOwnerImage from '../assets/new-dawn-owner.jpg';
 import { phoneDigits, safeSlug, safeText } from '../utils/content';
 
 const fallbackWhy = [
@@ -27,6 +28,7 @@ export default function About() {
   const farmName = safeText(farm?.name, 'The New Dawn Poultry Farm');
   const farmSlug = safeSlug(farm?.slug, 'new-dawn');
   const contact = farm?.contact_info || {};
+  const aboutImage = safeText(farm?.about_image_url) || (farmSlug === 'new-dawn' ? newDawnOwnerImage : broilerImage);
   const whyItems = Array.isArray(farm?.why_content) && farm.why_content.length > 0
     ? farm.why_content.map((item, index) => ({
         title: safeText(item?.title, fallbackWhy[index]?.title || 'Why customers choose us'),
@@ -92,8 +94,8 @@ export default function About() {
           <div className="relative">
             <div className="overflow-hidden rounded-[40px] border border-[#e6dfd1] shadow-2xl bg-white">
               <img
-                src={farm?.about_image_url || broilerImage}
-                alt={`${farmName} poultry`}
+                src={aboutImage}
+                alt={`${farmName} owner at the farm`}
                 className="w-full min-h-[420px] object-cover"
               />
             </div>

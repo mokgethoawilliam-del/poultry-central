@@ -18,6 +18,7 @@ import broilerImage from "../assets/healthy_broiler_poultry_1776000591785.png";
 import eggsImage from "../assets/fresh_organic_eggs_1776000562761.png";
 import chicksImage from "../assets/media__1775999890077.png";
 import newDawnLogo from "../assets/new-dawn-logo.jpg";
+import newDawnOwnerImage from "../assets/new-dawn-owner.jpg";
 import { phoneDigits, safeSlug, safeText } from "../utils/content";
 import StorefrontLegalModal from "../components/StorefrontLegalModal";
 
@@ -96,6 +97,7 @@ export default function Home() {
   const farmSlug = safeSlug(farm.slug, fallbackFarm.slug);
   const primaryColor = safeText(farm.primary_color, fallbackFarm.primary_color);
   const displayLogo = safeText(farm.logo_url) || (farmSlug === 'new-dawn' ? newDawnLogo : '');
+  const aboutImage = safeText(farm.about_image_url) || (farmSlug === 'new-dawn' ? newDawnOwnerImage : broilerImage);
   const whatsappNumber = phoneDigits(contact.whatsapp || contact.phone);
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -373,7 +375,7 @@ export default function Home() {
       <section id="about" className="bg-white py-24">
         <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-[5%] lg:grid-cols-2">
           <div className="overflow-hidden rounded-[36px]">
-            <img src={safeImage(farm.about_image_url, broilerImage)} alt="New Dawn poultry stock" className="h-full min-h-[420px] w-full object-cover" />
+            <img src={aboutImage} alt={`${farmName} owner at the farm`} className="h-full min-h-[420px] w-full object-cover" />
           </div>
           <div>
             <p className="text-xs font-black uppercase tracking-[0.25em] text-[#8b6b2f]">Our story</p>
