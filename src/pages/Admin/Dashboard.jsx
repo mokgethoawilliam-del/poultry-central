@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { supabase } from '../../services/supabase';
 import { 
   BarChart3, 
@@ -70,6 +72,7 @@ const Dashboard = () => {
   const [opsAiLoading, setOpsAiLoading] = useState(false);
   const [opsAiError, setOpsAiError] = useState('');
   const [opsAiResult, setOpsAiResult] = useState(null);
+  const [aiPendingAction, setAiPendingAction] = useState(null);
   const [showProductModal, setShowProductModal] = useState(false);
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
@@ -227,7 +230,11 @@ const Dashboard = () => {
         .order('order_index');
       if (!serviceErr) setFarmServices(serviceData || []);
 
-      const { data: orderData } = await supabase.from('orders').select('*').eq('farm_id', farm.id).order('created_at', { ascending: false });
+      const { data: orderData } = await supabase
+        .from('orders')
+        .select('*, order_items(*, products(*))')
+        .eq('farm_id', farm.id)
+        .order('created_at', { ascending: false });
       setOrders(orderData || []);
 
       const { data: galleryData } = await supabase.from('site_gallery').select('*').eq('farm_id', farm.id).order('order_index');
@@ -564,6 +571,30 @@ const Dashboard = () => {
     e?.preventDefault();
     if (!farmData?.id) return;
 
+    const reportRequest = buildPoultryReportRequest({
+      prompt: opsAiPrompt,
+      orders,
+      inventory,
+      customers,
+      farmName,
+    });
+
+    if (reportRequest) {
+      setAiPendingAction(reportRequest);
+      setOpsAiResult({
+        headline: `Prepared ${reportRequest.title}`,
+        summary: `I prepared a branded poultry PDF for ${reportRequest.subtitle}. Review the snapshot below and generate it when you're ready.`,
+        risks: [],
+        actions: [
+          'Review the report rows and summary totals.',
+          'Generate the PDF when you are happy with the date range.',
+          'Share it with farm buyers, managers, or partners as needed.',
+        ],
+      });
+      setOpsAiError('');
+      return;
+    }
+
     setOpsAiLoading(true);
     setOpsAiError('');
 
@@ -609,11 +640,76 @@ const Dashboard = () => {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload?.error || 'Could not generate farm operations guidance right now.');
       setOpsAiResult(payload.result || null);
+      setAiPendingAction(null);
     } catch (err) {
       setOpsAiError(err.message || 'Could not generate farm operations guidance right now.');
     } finally {
       setOpsAiLoading(false);
     }
+  };
+
+  const generateAiReportPdf = () => {
+    if (!aiPendingAction || !farmData) return;
+
+    const doc = new jsPDF();
+    const primaryColor = farmData?.primary_color || farmData?.branding?.primary_color || '#1d4d35';
+    const rgb = /^#([0-9a-f]{6})$/i.test(primaryColor)
+      ? primaryColor.match(/[0-9a-f]{2}/gi).map(part => parseInt(part, 16))
+      : [29, 77, 53];
+    const [r, g, b] = rgb;
+    const safeFarmName = safeText(farmData?.name, 'Farm Report');
+
+    doc.setFillColor(r, g, b);
+    doc.rect(0, 0, 210, 30, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(19);
+    doc.text(safeFarmName, 14, 16);
+    doc.setFontSize(11);
+    doc.text(aiPendingAction.title || 'Farm Report', 14, 24);
+
+    doc.setTextColor(31, 41, 55);
+    doc.setFontSize(10);
+    doc.text(aiPendingAction.subtitle || '', 14, 38);
+    doc.text(`Generated: ${new Date(aiPendingAction.generated_at || Date.now()).toLocaleString()}`, 14, 44);
+    if (farmData?.site_title) {
+      doc.text(String(farmData.site_title), 14, 50);
+    }
+
+    const formatPdfValue = (value, format) => {
+      if (format === 'currency') return `R ${Number(value || 0).toFixed(2)}`;
+      if (format === 'date') return value ? new Date(value).toLocaleDateString() : '-';
+      return value ?? '-';
+    };
+
+    autoTable(doc, {
+      startY: farmData?.site_title ? 58 : 54,
+      head: [(aiPendingAction.columns || []).map(column => column.label)],
+      body: (aiPendingAction.rows || []).map(row =>
+        (aiPendingAction.columns || []).map(column => formatPdfValue(row[column.key], column.format))
+      ),
+      styles: { fontSize: 10, cellPadding: 3 },
+      headStyles: { fillColor: [r, g, b] },
+    });
+
+    const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY : 80;
+    const summaryEntries = Object.entries(aiPendingAction.summary || {});
+    doc.setFontSize(11);
+    summaryEntries.forEach(([key, value], index) => {
+      const humanKey = key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+      const formattedValue = /revenue|spend|value|sales/i.test(key)
+        ? `R ${Number(value || 0).toFixed(2)}`
+        : value;
+      doc.text(`${humanKey}: ${formattedValue}`, 14, finalY + 12 + (index * 8));
+    });
+
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text('Powered by Poultry Central', 14, finalY + 20 + (summaryEntries.length * 8));
+
+    const farmSlugFile = safeSlug(farmData?.slug || safeFarmName, 'farm');
+    const reportSlug = safeSlug(aiPendingAction.title || 'report', 'report');
+    doc.save(`${farmSlugFile}_${reportSlug}_${Date.now()}.pdf`);
+    setAiPendingAction(null);
   };
 
   const resetTestimonialForm = () => {
@@ -685,6 +781,361 @@ const Dashboard = () => {
 
   const customers = Array.from(new Set(orders.map(o => o.customer_phone)))
     .map(phone => orders.find(o => o.customer_phone === phone));
+
+  const buildPoultryReportRequest = ({ prompt, orders: allOrders, inventory: allInventory, customers: allCustomers, farmName: currentFarmName }) => {
+    const parsedIntent = parsePoultryReportIntent(prompt);
+    if (!parsedIntent) return null;
+
+    const rangedOrders = (allOrders || []).filter(order => {
+      const created = new Date(order.created_at);
+      return created >= parsedIntent.startDate && created <= parsedIntent.endDate;
+    });
+
+    if (parsedIntent.kind === 'top_buyers') {
+      const buyerMap = new Map();
+      rangedOrders.forEach(order => {
+        const key = order.customer_phone || order.customer_name;
+        const current = buyerMap.get(key) || {
+          customer_name: order.customer_name,
+          customer_phone: order.customer_phone,
+          order_count: 0,
+          total_spend: 0,
+          last_order_date: order.created_at,
+        };
+        current.order_count += 1;
+        current.total_spend += Number(order.total_price || 0);
+        if (new Date(order.created_at) > new Date(current.last_order_date)) current.last_order_date = order.created_at;
+        buyerMap.set(key, current);
+      });
+
+      const rows = Array.from(buyerMap.values())
+        .sort((a, b) => b.total_spend - a.total_spend)
+        .slice(0, parsedIntent.limit)
+        .map((row, index) => ({ rank: index + 1, ...row }));
+
+      if (!rows.length) return null;
+      return {
+        type: 'pdf_report',
+        report_kind: 'top_buyers',
+        title: 'Top Buyers Report',
+        subtitle: parsedIntent.label,
+        generated_at: new Date().toISOString(),
+        columns: [
+          { key: 'rank', label: '#'},
+          { key: 'customer_name', label: 'Buyer' },
+          { key: 'customer_phone', label: 'Phone' },
+          { key: 'order_count', label: 'Orders' },
+          { key: 'total_spend', label: 'Total Spend', format: 'currency' },
+          { key: 'last_order_date', label: 'Last Order', format: 'date' },
+        ],
+        rows,
+        summary: {
+          buyers_ranked: rows.length,
+          total_revenue: rows.reduce((sum, row) => sum + Number(row.total_spend || 0), 0),
+        },
+      };
+    }
+
+    if (parsedIntent.kind === 'top_products') {
+      const productMap = new Map();
+      rangedOrders.forEach(order => {
+        (order.order_items || []).forEach(item => {
+          const name = safeText(item.products?.name, 'Farm Product');
+          const current = productMap.get(name) || { item_name: name, quantity_sold: 0, sales_value: 0 };
+          current.quantity_sold += Number(item.quantity || 0);
+          current.sales_value += Number(item.price_at_time || 0) * Number(item.quantity || 0);
+          productMap.set(name, current);
+        });
+      });
+      const rows = Array.from(productMap.values())
+        .sort((a, b) => b.quantity_sold - a.quantity_sold)
+        .slice(0, parsedIntent.limit)
+        .map((row, index) => ({ rank: index + 1, ...row }));
+      if (!rows.length) return null;
+      return {
+        type: 'pdf_report',
+        report_kind: 'top_products',
+        title: 'Top Products Report',
+        subtitle: parsedIntent.label,
+        generated_at: new Date().toISOString(),
+        columns: [
+          { key: 'rank', label: '#' },
+          { key: 'item_name', label: 'Product' },
+          { key: 'quantity_sold', label: 'Units Sold' },
+          { key: 'sales_value', label: 'Sales Value', format: 'currency' },
+        ],
+        rows,
+        summary: {
+          products_ranked: rows.length,
+          total_units: rows.reduce((sum, row) => sum + Number(row.quantity_sold || 0), 0),
+          total_sales: rows.reduce((sum, row) => sum + Number(row.sales_value || 0), 0),
+        },
+      };
+    }
+
+    if (parsedIntent.kind === 'sales_summary') {
+      const paidLikeOrders = rangedOrders.filter(order => order.status !== 'cancelled');
+      return {
+        type: 'pdf_report',
+        report_kind: 'sales_summary',
+        title: 'Sales Summary Report',
+        subtitle: parsedIntent.label,
+        generated_at: new Date().toISOString(),
+        columns: [
+          { key: 'order_number', label: 'Order' },
+          { key: 'customer_name', label: 'Customer' },
+          { key: 'status', label: 'Status' },
+          { key: 'fulfillment_method', label: 'Method' },
+          { key: 'total_price', label: 'Total', format: 'currency' },
+          { key: 'created_at', label: 'Date', format: 'date' },
+        ],
+        rows: paidLikeOrders.slice(0, 30),
+        summary: {
+          orders_count: paidLikeOrders.length,
+          total_revenue: paidLikeOrders.reduce((sum, order) => sum + Number(order.total_price || 0), 0),
+          average_order_value: paidLikeOrders.length ? paidLikeOrders.reduce((sum, order) => sum + Number(order.total_price || 0), 0) / paidLikeOrders.length : 0,
+        },
+      };
+    }
+
+    if (parsedIntent.kind === 'low_stock') {
+      const rows = (allInventory || [])
+        .filter(item => item.stock_status === 'low_stock' || item.stock_status === 'out_of_stock')
+        .map(item => ({
+          item_name: item.name,
+          category: item.category,
+          stock_status: item.stock_status,
+          price: item.price,
+        }));
+      if (!rows.length) return null;
+      return {
+        type: 'pdf_report',
+        report_kind: 'low_stock',
+        title: 'Low Stock Report',
+        subtitle: parsedIntent.label,
+        generated_at: new Date().toISOString(),
+        columns: [
+          { key: 'item_name', label: 'Product' },
+          { key: 'category', label: 'Category' },
+          { key: 'stock_status', label: 'Stock Status' },
+          { key: 'price', label: 'Price', format: 'currency' },
+        ],
+        rows,
+        summary: {
+          low_stock_items: rows.length,
+          out_of_stock_items: rows.filter(item => item.stock_status === 'out_of_stock').length,
+        },
+      };
+    }
+
+    if (parsedIntent.kind === 'order_status') {
+      const grouped = ['pending', 'confirmed', 'ready', 'completed', 'cancelled', 'delivered', 'out_for_delivery']
+        .map(status => ({
+          status,
+          orders_count: rangedOrders.filter(order => order.status === status).length,
+          revenue_value: rangedOrders.filter(order => order.status === status).reduce((sum, order) => sum + Number(order.total_price || 0), 0),
+        }))
+        .filter(row => row.orders_count > 0);
+      if (!grouped.length) return null;
+      return {
+        type: 'pdf_report',
+        report_kind: 'order_status',
+        title: 'Order Status Report',
+        subtitle: parsedIntent.label,
+        generated_at: new Date().toISOString(),
+        columns: [
+          { key: 'status', label: 'Status' },
+          { key: 'orders_count', label: 'Orders' },
+          { key: 'revenue_value', label: 'Revenue', format: 'currency' },
+        ],
+        rows: grouped,
+        summary: {
+          total_orders: rangedOrders.length,
+          pending_orders: grouped.find(row => row.status === 'pending')?.orders_count || 0,
+        },
+      };
+    }
+
+    if (parsedIntent.kind === 'repeat_customers') {
+      const rows = (allCustomers || [])
+        .map(customer => {
+          const customerOrders = rangedOrders.filter(order => order.customer_phone === customer.customer_phone);
+          return {
+            customer_name: customer.customer_name,
+            customer_phone: customer.customer_phone,
+            order_count: customerOrders.length,
+            total_spend: customerOrders.reduce((sum, order) => sum + Number(order.total_price || 0), 0),
+          };
+        })
+        .filter(row => row.order_count > 1)
+        .sort((a, b) => b.order_count - a.order_count)
+        .slice(0, parsedIntent.limit);
+      if (!rows.length) return null;
+      return {
+        type: 'pdf_report',
+        report_kind: 'repeat_customers',
+        title: 'Repeat Customers Report',
+        subtitle: parsedIntent.label,
+        generated_at: new Date().toISOString(),
+        columns: [
+          { key: 'customer_name', label: 'Customer' },
+          { key: 'customer_phone', label: 'Phone' },
+          { key: 'order_count', label: 'Orders' },
+          { key: 'total_spend', label: 'Spend', format: 'currency' },
+        ],
+        rows,
+        summary: {
+          repeat_customers: rows.length,
+          repeat_revenue: rows.reduce((sum, row) => sum + Number(row.total_spend || 0), 0),
+        },
+      };
+    }
+
+    if (parsedIntent.kind === 'bulk_buyers') {
+      const rows = rangedOrders
+        .filter(order => (order.order_items || []).some(item =>
+          safeText(item.products?.category).toLowerCase() === 'bulk' || Number(item.quantity || 0) >= 10
+        ))
+        .map(order => ({
+          order_number: order.order_number,
+          customer_name: order.customer_name,
+          customer_phone: order.customer_phone,
+          total_price: order.total_price,
+          created_at: order.created_at,
+        }));
+      if (!rows.length) return null;
+      return {
+        type: 'pdf_report',
+        report_kind: 'bulk_buyers',
+        title: 'Bulk Buyers Report',
+        subtitle: parsedIntent.label,
+        generated_at: new Date().toISOString(),
+        columns: [
+          { key: 'order_number', label: 'Order' },
+          { key: 'customer_name', label: 'Buyer' },
+          { key: 'customer_phone', label: 'Phone' },
+          { key: 'total_price', label: 'Order Value', format: 'currency' },
+          { key: 'created_at', label: 'Date', format: 'date' },
+        ],
+        rows,
+        summary: {
+          bulk_orders: rows.length,
+          bulk_revenue: rows.reduce((sum, row) => sum + Number(row.total_price || 0), 0),
+        },
+      };
+    }
+
+    if (parsedIntent.kind === 'category_performance') {
+      const categoryMap = new Map();
+      rangedOrders.forEach(order => {
+        (order.order_items || []).forEach(item => {
+          const category = safeText(item.products?.category, 'Other');
+          const current = categoryMap.get(category) || { category_name: category, quantity_sold: 0, sales_value: 0 };
+          current.quantity_sold += Number(item.quantity || 0);
+          current.sales_value += Number(item.price_at_time || 0) * Number(item.quantity || 0);
+          categoryMap.set(category, current);
+        });
+      });
+      const rows = Array.from(categoryMap.values()).sort((a, b) => b.sales_value - a.sales_value);
+      if (!rows.length) return null;
+      return {
+        type: 'pdf_report',
+        report_kind: 'category_performance',
+        title: 'Category Performance Report',
+        subtitle: parsedIntent.label,
+        generated_at: new Date().toISOString(),
+        columns: [
+          { key: 'category_name', label: 'Category' },
+          { key: 'quantity_sold', label: 'Units Sold' },
+          { key: 'sales_value', label: 'Sales Value', format: 'currency' },
+        ],
+        rows,
+        summary: {
+          categories_tracked: rows.length,
+          top_category: rows[0]?.category_name || '-',
+        },
+      };
+    }
+
+    return null;
+  };
+
+  const parsePoultryReportIntent = (prompt) => {
+    const text = String(prompt || '').trim().toLowerCase();
+    if (!text) return null;
+    if (!/\b(pdf|report|export)\b/.test(text) && !/\b(generate|create|make)\b/.test(text)) return null;
+
+    let kind = null;
+    if (/\b(top buyers|top customers|best buyers|best customers)\b/.test(text)) kind = 'top_buyers';
+    else if (/\b(top products|top items|best selling|top selling)\b/.test(text)) kind = 'top_products';
+    else if (/\b(sales|revenue)\b/.test(text) && /\b(summary|report|pdf)\b/.test(text)) kind = 'sales_summary';
+    else if (/\b(low stock|stock risk|out of stock)\b/.test(text)) kind = 'low_stock';
+    else if (/\b(order status|orders by status|status report)\b/.test(text)) kind = 'order_status';
+    else if (/\b(repeat customer|repeat buyer|returning customer)\b/.test(text)) kind = 'repeat_customers';
+    else if (/\b(bulk buyer|bulk order|bulk buyers)\b/.test(text)) kind = 'bulk_buyers';
+    else if (/\b(category performance|category report|product category)\b/.test(text)) kind = 'category_performance';
+
+    if (!kind) return null;
+
+    const range = parsePromptDateRange(text);
+    return {
+      kind,
+      startDate: range.startDate,
+      endDate: range.endDate,
+      label: range.label,
+      limit: 10,
+    };
+  };
+
+  const parsePromptDateRange = (text) => {
+    const now = new Date();
+    const endToday = new Date(now);
+    endToday.setHours(23, 59, 59, 999);
+    const startToday = new Date(now);
+    startToday.setHours(0, 0, 0, 0);
+
+    const monthMap = {
+      january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
+      july: 6, august: 7, september: 8, october: 9, november: 10, december: 11,
+    };
+    const monthMatches = [...text.matchAll(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/g)].map(match => match[1]);
+
+    if (monthMatches.length >= 2 && /\bfrom\b.*\bto\b/.test(text)) {
+      const startMonth = monthMap[monthMatches[0]];
+      const endMonth = monthMap[monthMatches[1]];
+      const startDate = new Date(now.getFullYear(), startMonth, 1);
+      const endDate = new Date(now.getFullYear(), endMonth + 1, 0, 23, 59, 59, 999);
+      return { startDate, endDate, label: `${monthMatches[0]} to ${monthMatches[1]}` };
+    }
+
+    if (monthMatches.length === 1) {
+      const month = monthMap[monthMatches[0]];
+      const startDate = new Date(now.getFullYear(), month, 1);
+      const endDate = new Date(now.getFullYear(), month + 1, 0, 23, 59, 59, 999);
+      return { startDate, endDate, label: monthMatches[0] };
+    }
+
+    if (/\bthis week\b/.test(text)) {
+      const startDate = new Date(now);
+      startDate.setDate(now.getDate() - 6);
+      startDate.setHours(0, 0, 0, 0);
+      return { startDate, endDate: endToday, label: 'this week' };
+    }
+
+    if (/\btoday\b/.test(text)) {
+      return { startDate: startToday, endDate: endToday, label: 'today' };
+    }
+
+    if (/\bthis month\b/.test(text)) {
+      const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      return { startDate, endDate: endToday, label: 'this month' };
+    }
+
+    const startDate = new Date(now);
+    startDate.setMonth(now.getMonth() - 1);
+    startDate.setHours(0, 0, 0, 0);
+    return { startDate, endDate: endToday, label: 'the last 30 days' };
+  };
 
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f7f4ee' }}>
@@ -1273,6 +1724,10 @@ const Dashboard = () => {
                   'Which orders need attention first?',
                   'What is my stock risk right now?',
                   'Summarize my farm performance this week.',
+                  'Generate a top buyers PDF for this month.',
+                  'Create a low stock report PDF.',
+                  'Make a bulk buyers report for this month.',
+                  'Generate a category performance PDF.',
                 ].map((idea) => (
                   <button key={idea} type="button" style={styles.settingsHubCard} onClick={() => setOpsAiPrompt(idea)}>
                     <div style={styles.settingsHubKicker}>Suggested Ask</div>
@@ -1305,6 +1760,53 @@ const Dashboard = () => {
                 </div>
               </form>
             </section>
+
+            {aiPendingAction?.type === 'pdf_report' && (
+              <section style={styles.panel}>
+                <div style={{ color: '#8b6b2f', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.45rem', fontWeight: 900 }}>
+                  Pending PDF Report
+                </div>
+                <div style={{ display: 'grid', gap: '18px' }}>
+                  <div style={styles.panelHead}>
+                    <div>
+                      <h3 style={styles.panelTitle}>{safeText(aiPendingAction.title, 'Farm Report')}</h3>
+                      <p style={styles.rowSub}>{safeText(aiPendingAction.subtitle, '')}</p>
+                    </div>
+                    <button type="button" style={styles.primaryBtnLarge} onClick={generateAiReportPdf}>
+                      Generate PDF
+                    </button>
+                  </div>
+
+                  <div style={styles.formGrid}>
+                    {(aiPendingAction.columns || []).slice(0, 4).map(column => (
+                      <div key={column.key} style={styles.formGroup}>
+                        <label style={styles.label}>{column.label}</label>
+                        <div style={styles.copilotDraftBox}>
+                          {(aiPendingAction.rows || []).slice(0, 3).map((row, index) => (
+                            <div key={`${column.key}-${index}`} style={{ padding: '4px 0', borderBottom: index < 2 ? '1px solid #efe8dc' : 'none' }}>
+                              {column.format === 'currency'
+                                ? `R ${Number(row[column.key] || 0).toFixed(2)}`
+                                : column.format === 'date'
+                                  ? (row[column.key] ? new Date(row[column.key]).toLocaleDateString() : '-')
+                                  : safeText(String(row[column.key] ?? '-'), '-')}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ display: 'grid', gap: '10px' }}>
+                    {Object.entries(aiPendingAction.summary || {}).map(([key, value]) => (
+                      <div key={key} style={styles.copilotDraftBox}>
+                        <strong>{key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}:</strong>{' '}
+                        {/revenue|spend|sales|value/i.test(key) ? `R ${Number(value || 0).toFixed(2)}` : String(value)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
 
             <section style={styles.panel}>
               <div style={styles.panelHead}>
