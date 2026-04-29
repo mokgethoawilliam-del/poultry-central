@@ -67,7 +67,7 @@ const MainLayout = () => {
 
   if (loading) return (
     <div className="h-screen w-full flex items-center justify-center bg-[#fcfaf5]">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#c2410c]"></div>
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#b91c1c]"></div>
     </div>
   );
 
@@ -81,7 +81,7 @@ const MainLayout = () => {
         </p>
         <Link
           to="/register"
-          className="inline-flex items-center gap-2 rounded-full bg-[#c2410c] px-6 py-4 text-sm font-black text-white shadow-lg"
+          className="inline-flex items-center gap-2 rounded-full bg-[#b91c1c] px-6 py-4 text-sm font-black text-white shadow-lg"
         >
           <ArrowLeft size={18} />
           Register Your Farm
@@ -115,7 +115,7 @@ const MainLayout = () => {
       {activeOrderId && location.pathname !== `/${activeFarmSlug}/order` && (
         <Link
           to={`/${activeFarmSlug}/order`}
-          className="fixed bottom-6 left-6 bg-[#c2410c] text-white p-4 rounded-full shadow-2xl flex items-center gap-3 z-50 hover:scale-110 transition-all border-2 border-white/20 animate-bounce"
+          className="fixed bottom-6 left-6 bg-[#b91c1c] text-white p-4 rounded-full shadow-2xl flex items-center gap-3 z-50 hover:scale-110 transition-all border-2 border-white/20 animate-bounce"
         >
           <Package size={24} />
           <span className="text-xs font-black uppercase tracking-widest pr-2 hidden sm:inline">Track Active Order</span>

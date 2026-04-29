@@ -68,7 +68,7 @@ const Header = ({ farm }) => {
                 className="h-14 w-14 md:h-16 md:w-16 rounded-2xl bg-white object-contain p-1.5 border border-[#e6dfd1] shadow-lg group-hover:scale-105 transition-transform"
               />
             ) : (
-                <div className="h-14 w-14 md:h-16 md:w-16 rounded-2xl bg-[#c2410c] text-white flex items-center justify-center font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">
+                <div className="h-14 w-14 md:h-16 md:w-16 rounded-2xl bg-[#b91c1c] text-white flex items-center justify-center font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">
                 {firstLetter(farmName)}
               </div>
             )}
@@ -89,7 +89,7 @@ const Header = ({ farm }) => {
                 <a
                   key={link.name}
                   href="#home"
-                  className="text-[15px] font-bold transition-all hover:text-[#c2410c] text-[#183126]"
+                  className="text-[15px] font-bold transition-all hover:text-[#b91c1c] text-[#183126]"
                 >
                   {link.name}
                 </a>
@@ -97,8 +97,8 @@ const Header = ({ farm }) => {
                 <Link
                   key={link.name}
                   to={link.path}
-                  className={`text-[15px] font-bold transition-all hover:text-[#c2410c] ${
-                    location.pathname === link.path ? 'text-[#c2410c]' : 'text-[#183126]'
+                  className={`text-[15px] font-bold transition-all hover:text-[#b91c1c] ${
+                    location.pathname === link.path ? 'text-[#b91c1c]' : 'text-[#183126]'
                   }`}
                 >
                   {link.name}
@@ -152,7 +152,7 @@ const Header = ({ farm }) => {
                 key={link.name}
                 to={link.path}
                 onClick={() => setMenuOpen(false)}
-                className="block text-lg font-bold text-[#183126] hover:text-[#c2410c] px-2"
+                className="block text-lg font-bold text-[#183126] hover:text-[#b91c1c] px-2"
               >
                 {link.name}
               </Link>

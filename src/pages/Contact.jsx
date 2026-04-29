@@ -86,7 +86,7 @@ const Contact = () => {
               
               <div className="space-y-8">
                 <div className="flex gap-6 items-start">
-                  <div className="w-14 h-14 bg-[#fcfaf5] rounded-2xl flex items-center justify-center text-[#c2410c] flex-shrink-0 shadow-sm border border-[#e6dfd1]">
+                  <div className="w-14 h-14 bg-[#fff5f5] rounded-2xl flex items-center justify-center text-[#b91c1c] flex-shrink-0 shadow-sm border border-[#f2d4d4]">
                     <MapPin size={24} />
                   </div>
                   <div>
@@ -96,7 +96,7 @@ const Contact = () => {
                 </div>
 
                 <div className="flex gap-6 items-start">
-                  <div className="w-14 h-14 bg-[#fcfaf5] rounded-2xl flex items-center justify-center text-[#c2410c] flex-shrink-0 shadow-sm border border-[#e6dfd1]">
+                  <div className="w-14 h-14 bg-[#fff5f5] rounded-2xl flex items-center justify-center text-[#b91c1c] flex-shrink-0 shadow-sm border border-[#f2d4d4]">
                     <Clock size={24} />
                   </div>
                   <div>
@@ -106,7 +106,7 @@ const Contact = () => {
                 </div>
 
                 <div className="flex gap-6 items-start">
-                  <div className="w-14 h-14 bg-[#fcfaf5] rounded-2xl flex items-center justify-center text-[#c2410c] flex-shrink-0 shadow-sm border border-[#e6dfd1]">
+                  <div className="w-14 h-14 bg-[#fff5f5] rounded-2xl flex items-center justify-center text-[#b91c1c] flex-shrink-0 shadow-sm border border-[#f2d4d4]">
                     <Phone size={24} />
                   </div>
                   <div>
@@ -117,7 +117,7 @@ const Contact = () => {
 
                 {safeText(contact.email) && (
                   <div className="flex gap-6 items-start">
-                    <div className="w-14 h-14 bg-[#fcfaf5] rounded-2xl flex items-center justify-center text-[#c2410c] flex-shrink-0 shadow-sm border border-[#e6dfd1]">
+                    <div className="w-14 h-14 bg-[#fff5f5] rounded-2xl flex items-center justify-center text-[#b91c1c] flex-shrink-0 shadow-sm border border-[#f2d4d4]">
                       <Mail size={24} />
                     </div>
                     <div>
@@ -191,40 +191,40 @@ const Contact = () => {
               <form onSubmit={handleSubmit} className="space-y-8">
                 <div className="grid md:grid-cols-2 gap-8">
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#c2410c]">Your Name</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#b91c1c]">Your Name</label>
                     <input 
                       required
                       placeholder="e.g. Marcus Moagi"
-                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#c2410c] outline-none transition-all"
+                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#b91c1c] outline-none transition-all"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#c2410c]">Email Address</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#b91c1c]">Email Address</label>
                     <input 
                       required
                       type="email"
                       placeholder="marcus@example.com"
-                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#c2410c] outline-none transition-all"
+                      className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#b91c1c] outline-none transition-all"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#c2410c]">Subject</label>
+                  <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#b91c1c]">Subject</label>
                   <input 
                     required
                     placeholder="e.g. Bulk Egg Inquiry"
-                    className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#c2410c] outline-none transition-all"
+                    className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-2xl font-bold text-[#183126] focus:ring-2 focus:ring-[#b91c1c] outline-none transition-all"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#c2410c]">Message Details</label>
+                  <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#b91c1c]">Message Details</label>
                   <textarea 
                     required
                     rows="5"
                     placeholder="Tell us about your needs..."
-                    className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-3xl font-bold text-[#183126] focus:ring-2 focus:ring-[#c2410c] outline-none transition-all resize-none"
+                    className="w-full bg-[#fcfaf5] border border-[#e6dfd1] px-6 py-4 rounded-3xl font-bold text-[#183126] focus:ring-2 focus:ring-[#b91c1c] outline-none transition-all resize-none"
                   />
                 </div>
 

@@ -31,7 +31,7 @@ const Footer = ({ farm }) => {
                   className="h-16 w-16 rounded-2xl bg-white object-contain p-1.5 border border-white/10 shadow-lg"
                 />
               ) : (
-                <div className="h-16 w-16 rounded-2xl bg-[#c2410c] text-white flex items-center justify-center font-black text-2xl border border-white/10 shadow-lg">
+                <div className="h-16 w-16 rounded-2xl bg-[#b91c1c] text-white flex items-center justify-center font-black text-2xl border border-white/10 shadow-lg">
                   {firstLetter(farmName)}
                 </div>
               )}

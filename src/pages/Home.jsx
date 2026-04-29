@@ -223,11 +223,11 @@ export default function Home() {
           <div className="hidden items-center gap-8 lg:flex">
             {navLinks.map((link) =>
               link.to ? (
-                <Link key={link.label} to={link.to} className="text-sm font-black hover:text-[#c2410c]">
+                <Link key={link.label} to={link.to} className="text-sm font-black hover:text-[#b91c1c]">
                   {link.label}
                 </Link>
               ) : (
-                <a key={link.label} href={link.href} className="text-sm font-black hover:text-[#c2410c]">
+                <a key={link.label} href={link.href} className="text-sm font-black hover:text-[#b91c1c]">
                   {link.label}
                 </a>
               )
@@ -397,7 +397,7 @@ export default function Home() {
               <p className="text-xs font-black uppercase tracking-[0.25em] text-[#8b6b2f]">Farm highlights</p>
               <h2 className="mt-4 text-4xl font-black tracking-tight md:text-6xl">Order what is fresh now</h2>
             </div>
-            <Link to={`/${farmSlug}/products`} className="flex items-center gap-2 text-sm font-black text-[#c2410c]">
+            <Link to={`/${farmSlug}/products`} className="flex items-center gap-2 text-sm font-black text-[#b91c1c]">
               View all products
               <ArrowRight size={18} />
             </Link>
@@ -461,7 +461,7 @@ export default function Home() {
                   "{safeText(testimonial.quote, "Reliable service and fresh poultry.")}"
                 </blockquote>
                 <figcaption className="mt-8 flex items-center gap-4 border-t border-[#e6dfd1] pt-6">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#c2410c] font-black text-white">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#b91c1c] font-black text-white">
                     {safeText(testimonial.author_name, "C").charAt(0)}
                   </div>
                   <div>
@@ -492,7 +492,7 @@ export default function Home() {
                 href={mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#c2410c] px-6 py-4 text-sm font-black text-white shadow-lg"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#b91c1c] px-6 py-4 text-sm font-black text-white shadow-lg"
               >
                 Open in Google Maps
                 <ArrowRight size={18} />
@@ -515,7 +515,7 @@ export default function Home() {
                   href={mapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-8 inline-flex items-center gap-2 text-sm font-black text-[#c2410c]"
+                  className="mt-8 inline-flex items-center gap-2 text-sm font-black text-[#b91c1c]"
                 >
                   Get turn-by-turn directions
                   <ArrowRight size={16} />
@@ -558,17 +558,17 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="bg-[#451a03] py-16 text-white">
+      <footer className="bg-[#7f1d1d] py-16 text-white">
         <div className="mx-auto grid max-w-[1200px] gap-10 px-[5%] md:grid-cols-[1.2fr_0.8fr_1fr]">
           <div>
             <p className="text-2xl font-black">{farmName}</p>
-            <p className="mt-4 max-w-sm text-sm font-medium leading-relaxed text-[#c7d3ca]">
+            <p className="mt-4 max-w-sm text-sm font-medium leading-relaxed text-[#f5d7d7]">
               Quality poultry supply for homes, businesses, and community events.
             </p>
           </div>
           <div>
             <p className="text-xs font-black uppercase tracking-[0.25em] text-[#d6c27c]">Explore</p>
-            <div className="mt-5 flex flex-col gap-3 text-sm font-bold text-[#e8eee9]">
+            <div className="mt-5 flex flex-col gap-3 text-sm font-bold text-[#fff0f0]">
               <Link to={`/${farmSlug}/products`}>Products</Link>
               <Link to={`/${farmSlug}/services`}>Services</Link>
               <Link to={`/${farmSlug}/order`}>Order</Link>
@@ -576,7 +576,7 @@ export default function Home() {
           </div>
           <div>
             <p className="text-xs font-black uppercase tracking-[0.25em] text-[#d6c27c]">Contact</p>
-            <div className="mt-5 flex flex-col gap-3 text-sm font-medium text-[#c7d3ca]">
+            <div className="mt-5 flex flex-col gap-3 text-sm font-medium text-[#f5d7d7]">
               <p>{safeText(contact.address, fallbackFarm.contact_info.address)}</p>
               <p>{safeText(contact.phone, fallbackFarm.contact_info.phone)}</p>
               {safeText(contact.email) && <p>{safeText(contact.email)}</p>}
@@ -586,7 +586,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-        <div className="mx-auto mt-12 flex max-w-[1200px] flex-col gap-4 border-t border-white/10 px-[5%] pt-8 text-sm text-[#c7d3ca] md:flex-row md:items-center md:justify-between">
+        <div className="mx-auto mt-12 flex max-w-[1200px] flex-col gap-4 border-t border-white/10 px-[5%] pt-8 text-sm text-[#f0c8c8] md:flex-row md:items-center md:justify-between">
           <p>&copy; {new Date().getFullYear()} {farmName}. Powered by Poultry Central.</p>
           <div className="flex flex-wrap gap-6">
             <button type="button" onClick={() => setLegalView('terms')} className="font-bold text-white">Terms & Conditions</button>

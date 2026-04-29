@@ -519,7 +519,7 @@ const Order = () => {
 
               <div className="bg-[#f5f0e6] p-10 rounded-[40px] border border-[#e6dfd1] space-y-6">
                 <div className="flex gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-[#c2410c] flex-shrink-0 shadow-sm">
+                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-[#b91c1c] flex-shrink-0 shadow-sm">
                     <Info size={20} />
                   </div>
                   <div>
