@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, MessageCircle } from 'lucide-react';
+import newDawnLogo from '../assets/new-dawn-logo.jpg';
 import { firstLetter, phoneDigits, safeSlug, safeText } from '../utils/content';
 
 const Header = ({ farm }) => {
@@ -11,6 +12,7 @@ const Header = ({ farm }) => {
   const farmName = safeText(farm?.name, 'New Dawn Poultry');
   const farmSlug = safeSlug(farm?.slug, 'new-dawn');
   const siteTitle = safeText(farm?.site_title, 'Fresh poultry, eggs, and farm supply');
+  const displayLogo = safeText(farm?.logo_url) || (farmSlug === 'new-dawn' ? newDawnLogo : '');
   const isHomePage = location.pathname === `/${farmSlug}` || location.pathname === `/${farmSlug}/`;
 
   useEffect(() => {
@@ -45,11 +47,11 @@ const Header = ({ farm }) => {
         <div className="flex items-center justify-between gap-5">
           {/* Logo Section */}
           <Link to={`/${farmSlug}`} className="flex items-center gap-3 group">
-            {farm?.logo_url ? (
+            {displayLogo ? (
               <img
-                src={farm.logo_url}
+                src={displayLogo}
                 alt={`${farmName} logo`}
-                className="w-10 h-10 md:w-11 md:h-11 rounded-full object-cover border border-[#e6dfd1] shadow-lg group-hover:scale-110 transition-transform"
+                className="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-white object-contain p-1 border border-[#e6dfd1] shadow-lg group-hover:scale-110 transition-transform"
               />
             ) : (
               <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-[#c2410c] text-white flex items-center justify-center font-bold text-lg shadow-lg group-hover:scale-110 transition-transform">

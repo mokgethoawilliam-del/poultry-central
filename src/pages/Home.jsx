@@ -17,6 +17,7 @@ import heroImage from "../assets/premium_farm_hero_1776000531649.png";
 import broilerImage from "../assets/healthy_broiler_poultry_1776000591785.png";
 import eggsImage from "../assets/fresh_organic_eggs_1776000562761.png";
 import chicksImage from "../assets/media__1775999890077.png";
+import newDawnLogo from "../assets/new-dawn-logo.jpg";
 import { phoneDigits, safeSlug, safeText } from "../utils/content";
 import StorefrontLegalModal from "../components/StorefrontLegalModal";
 
@@ -24,6 +25,7 @@ const fallbackFarm = {
   name: "The New Dawn Poultry Farm",
   slug: "new-dawn",
   primary_color: "#c2410c",
+  logo_url: newDawnLogo,
   site_title: "Fresh poultry in Polokwane",
   hero_subtitle:
     "Premium farm-raised poultry, fresh eggs, and day-old chicks supplied with care for families, resellers, and local events.",
@@ -93,6 +95,7 @@ export default function Home() {
   const farmName = safeText(farm.name, fallbackFarm.name);
   const farmSlug = safeSlug(farm.slug, fallbackFarm.slug);
   const primaryColor = safeText(farm.primary_color, fallbackFarm.primary_color);
+  const displayLogo = safeText(farm.logo_url) || (farmSlug === 'new-dawn' ? newDawnLogo : '');
   const whatsappNumber = phoneDigits(contact.whatsapp || contact.phone);
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -155,9 +158,9 @@ export default function Home() {
       <nav className="fixed inset-x-0 top-0 z-50 border-b border-white/20 bg-[#fcfaf5]/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1200px] items-center justify-between px-[5%] py-4">
           <Link to={`/${farmSlug}`} className="flex min-w-0 items-center gap-3">
-            {safeText(farm.logo_url) ? (
+            {displayLogo ? (
               <img
-                src={farm.logo_url}
+                src={displayLogo}
                 alt={farmName}
                 className="h-11 w-11 shrink-0 rounded-2xl bg-white object-contain p-1 shadow-lg"
               />

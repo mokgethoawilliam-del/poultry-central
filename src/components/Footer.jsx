@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, MessageCircle, Clock } from 'lucide-react';
+import newDawnLogo from '../assets/new-dawn-logo.jpg';
 import { firstLetter, safeSlug, safeText } from '../utils/content';
 import StorefrontLegalModal from './StorefrontLegalModal';
 
@@ -13,6 +14,7 @@ const Footer = ({ farm }) => {
   const email = safeText(contact.email);
   const phone = safeText(contact.phone);
   const whatsapp = safeText(contact.whatsapp, phone);
+  const displayLogo = safeText(farm?.logo_url) || (farmSlug === 'new-dawn' ? newDawnLogo : '');
   
   return (
     <>
@@ -22,11 +24,11 @@ const Footer = ({ farm }) => {
           {/* Brand Info */}
           <div className="max-w-[480px]">
           <div className="flex items-center gap-4 mb-6">
-              {farm?.logo_url ? (
+              {displayLogo ? (
                 <img
-                  src={farm.logo_url}
+                  src={displayLogo}
                   alt={`${farmName} logo`}
-                  className="w-12 h-12 rounded-full object-cover border border-white/10 shadow-lg"
+                  className="w-12 h-12 rounded-xl bg-white object-contain p-1 border border-white/10 shadow-lg"
                 />
               ) : (
                 <div className="w-12 h-12 rounded-full bg-[#c2410c] text-white flex items-center justify-center font-black text-xl border border-white/10 shadow-lg">
